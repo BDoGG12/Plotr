@@ -3,18 +3,14 @@ import SwiftData
 
 struct IdeaVaultView: View {
     @Query(sort: \Post.createdAt, order: .reverse) private var posts: [Post]
-    @State private var search = ""
-
-    private var ideas: [Post] {
-        let pool = posts.filter { $0.stage == .idea }
-        guard !search.trimmingCharacters(in: .whitespaces).isEmpty else { return pool }
-        return pool.filter { $0.title.localizedCaseInsensitiveContains(search) }
-    }
+    @State private var viewModel = IdeaVaultViewModel()
 
     var body: some View {
         NavigationStack {
             ZStack {
                 Theme.background.ignoresSafeArea()
+
+                let ideas = viewModel.ideas(from: posts)
 
                 if ideas.isEmpty {
                     emptyState
@@ -35,7 +31,7 @@ struct IdeaVaultView: View {
             .navigationTitle("Ideas")
             .toolbarBackground(Theme.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ideas")
+            .searchable(text: $viewModel.search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ideas")
             .navigationDestination(for: UUID.self) { id in
                 if let post = posts.first(where: { $0.id == id }) {
                     PostDetailView(post: post)

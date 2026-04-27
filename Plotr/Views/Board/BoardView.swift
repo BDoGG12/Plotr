@@ -12,7 +12,7 @@ struct PostTransfer: Codable, Transferable {
 struct BoardView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Post.createdAt, order: .reverse) private var posts: [Post]
-    @State private var routePostID: UUID?
+    @State private var viewModel = BoardViewModel()
 
     var body: some View {
         NavigationStack {
@@ -24,9 +24,11 @@ struct BoardView: View {
                         ForEach(Stage.allCases) { stage in
                             BoardColumn(
                                 stage: stage,
-                                posts: posts.filter { $0.stage == stage },
-                                onAdd: { addPost(in: stage) },
-                                onDrop: { transfer in move(transfer: transfer, to: stage) }
+                                posts: viewModel.posts(posts, in: stage),
+                                onAdd: { viewModel.addPost(in: stage, context: context) },
+                                onDrop: { transfer in
+                                    viewModel.move(transfer: transfer, to: stage, in: posts)
+                                }
                             )
                         }
                     }
@@ -44,21 +46,6 @@ struct BoardView: View {
                 }
             }
         }
-    }
-
-    private func addPost(in stage: Stage) {
-        let post = Post(title: "Untitled", stage: stage)
-        context.insert(post)
-        post.resetChecklistForCurrentPlatform(context: context)
-    }
-
-    private func move(transfer: PostTransfer, to stage: Stage) -> Bool {
-        guard let post = posts.first(where: { $0.id == transfer.id }) else { return false }
-        guard post.stage != stage else { return false }
-        withAnimation(.snappy) {
-            post.stage = stage
-        }
-        return true
     }
 }
 

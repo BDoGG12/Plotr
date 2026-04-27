@@ -3,17 +3,7 @@ import SwiftData
 
 struct CalendarView: View {
     @Query private var posts: [Post]
-    @State private var weekAnchor: Date = .now
-
-    private var calendar: Calendar { Calendar.current }
-
-    private var weekStart: Date {
-        calendar.dateInterval(of: .weekOfYear, for: weekAnchor)?.start ?? weekAnchor
-    }
-
-    private var days: [Date] {
-        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
-    }
+    @State private var viewModel = CalendarViewModel()
 
     var body: some View {
         NavigationStack {
@@ -25,8 +15,13 @@ struct CalendarView: View {
 
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(days, id: \.self) { day in
-                                DayRow(day: day, posts: posts(on: day))
+                            ForEach(viewModel.days, id: \.self) { day in
+                                DayRow(
+                                    day: day,
+                                    posts: viewModel.posts(posts, on: day),
+                                    isToday: viewModel.isToday(day),
+                                    uniquePlatforms: viewModel.uniquePlatforms(in: viewModel.posts(posts, on: day))
+                                )
                             }
                         }
                         .padding(16)
@@ -47,7 +42,7 @@ struct CalendarView: View {
     private var weekHeader: some View {
         HStack {
             Button {
-                shiftWeek(by: -1)
+                viewModel.shiftWeek(by: -1)
             } label: {
                 Image(systemName: "chevron.left").font(.headline)
             }
@@ -56,10 +51,10 @@ struct CalendarView: View {
             Spacer()
 
             VStack(spacing: 2) {
-                Text(weekRangeLabel)
+                Text(viewModel.weekRangeLabel)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                Button("This week") { weekAnchor = .now }
+                Button("This week") { viewModel.resetToThisWeek() }
                     .font(.caption)
                     .tint(Theme.textSecondary)
             }
@@ -67,7 +62,7 @@ struct CalendarView: View {
             Spacer()
 
             Button {
-                shiftWeek(by: 1)
+                viewModel.shiftWeek(by: 1)
             } label: {
                 Image(systemName: "chevron.right").font(.headline)
             }
@@ -77,33 +72,13 @@ struct CalendarView: View {
         .padding(.vertical, 10)
         .background(Theme.background)
     }
-
-    private var weekRangeLabel: String {
-        let end = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
-        let fmt = Date.FormatStyle.dateTime.month(.abbreviated).day()
-        return "\(weekStart.formatted(fmt)) – \(end.formatted(fmt))"
-    }
-
-    private func shiftWeek(by delta: Int) {
-        if let newDate = calendar.date(byAdding: .weekOfYear, value: delta, to: weekAnchor) {
-            withAnimation(.snappy) { weekAnchor = newDate }
-        }
-    }
-
-    private func posts(on day: Date) -> [Post] {
-        posts.filter { post in
-            guard let due = post.dueDate else { return false }
-            return calendar.isDate(due, inSameDayAs: day)
-        }
-        .sorted { $0.title < $1.title }
-    }
 }
 
 private struct DayRow: View {
     let day: Date
     let posts: [Post]
-
-    private var isToday: Bool { Calendar.current.isDateInToday(day) }
+    let isToday: Bool
+    let uniquePlatforms: [Platform]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -157,16 +132,6 @@ private struct DayRow: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(isToday ? Theme.accent.opacity(0.4) : Theme.border, lineWidth: 1)
         )
-    }
-
-    private var uniquePlatforms: [Platform] {
-        var seen = Set<Platform>()
-        var ordered: [Platform] = []
-        for p in posts.map(\.platform) where !seen.contains(p) {
-            seen.insert(p)
-            ordered.append(p)
-        }
-        return ordered
     }
 }
 

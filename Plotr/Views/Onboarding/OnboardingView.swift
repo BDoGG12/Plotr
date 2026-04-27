@@ -6,10 +6,7 @@ struct OnboardingView: View {
     @AppStorage("creatorHandle") private var creatorHandle = ""
     @AppStorage("platforms") private var platformsData = ""
 
-    @State private var step = 0
-    @State private var name = ""
-    @State private var handle = ""
-    @State private var selected: Set<Platform> = []
+    @State private var viewModel = OnboardingViewModel()
 
     var body: some View {
         ZStack {
@@ -19,7 +16,7 @@ struct OnboardingView: View {
                 header
 
                 Group {
-                    if step == 0 {
+                    if viewModel.step == 0 {
                         stepOne
                     } else {
                         stepTwo
@@ -41,7 +38,7 @@ struct OnboardingView: View {
                 Text("Plotr")
                     .font(.largeTitle.bold())
                     .foregroundStyle(Theme.accent)
-                Text(step == 0 ? "Tell us about you" : "Pick your platforms")
+                Text(viewModel.headerSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
             }
@@ -55,8 +52,8 @@ struct OnboardingView: View {
 
     private var stepOne: some View {
         VStack(spacing: 16) {
-            field(label: "Your name", text: $name, placeholder: "Alex Rivers")
-            field(label: "Creator handle", text: $handle, placeholder: "@alexrivers")
+            field(label: "Your name", text: $viewModel.name, placeholder: "Alex Rivers")
+            field(label: "Creator handle", text: $viewModel.handle, placeholder: "@alexrivers")
         }
     }
 
@@ -72,10 +69,9 @@ struct OnboardingView: View {
                 ForEach(Platform.allCases) { platform in
                     PlatformToggleRow(
                         platform: platform,
-                        isOn: selected.contains(platform)
+                        isOn: viewModel.selected.contains(platform)
                     ) {
-                        if selected.contains(platform) { selected.remove(platform) }
-                        else { selected.insert(platform) }
+                        viewModel.togglePlatform(platform)
                     }
                 }
             }
@@ -84,9 +80,9 @@ struct OnboardingView: View {
 
     private var footer: some View {
         HStack {
-            if step > 0 {
+            if viewModel.step > 0 {
                 Button {
-                    withAnimation { step -= 1 }
+                    withAnimation { viewModel.goBack() }
                 } label: {
                     Text("Back")
                         .frame(maxWidth: .infinity)
@@ -97,13 +93,11 @@ struct OnboardingView: View {
             }
 
             Button {
-                if step == 0 {
-                    withAnimation { step = 1 }
-                } else {
-                    finish()
+                withAnimation {
+                    viewModel.advance(finish: finish)
                 }
             } label: {
-                Text(step == 0 ? "Continue" : "Start planning")
+                Text(viewModel.primaryButtonTitle)
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
@@ -130,9 +124,9 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        creatorName = name
-        creatorHandle = handle
-        platformsData = selected.map(\.rawValue).joined(separator: ",")
+        creatorName = viewModel.name
+        creatorHandle = viewModel.handle
+        platformsData = viewModel.serializedPlatforms
         hasOnboarded = true
     }
 }

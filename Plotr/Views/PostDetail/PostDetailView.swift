@@ -5,9 +5,7 @@ struct PostDetailView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @State private var hasDueDate: Bool = false
-    @State private var dueDateValue: Date = .now
-    @State private var showDeleteConfirm = false
+    @State private var viewModel = PostDetailViewModel()
 
     var body: some View {
         ZStack {
@@ -30,21 +28,17 @@ struct PostDetailView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .foregroundStyle(Theme.textPrimary)
         .onAppear {
-            hasDueDate = post.dueDate != nil
-            dueDateValue = post.dueDate ?? .now
-            if post.checklist.isEmpty {
-                post.resetChecklistForCurrentPlatform(context: context)
-            }
+            viewModel.sync(from: post, context: context)
         }
-        .onChange(of: hasDueDate) { _, newValue in
-            post.dueDate = newValue ? dueDateValue : nil
+        .onChange(of: viewModel.hasDueDate) { _, newValue in
+            viewModel.dueDateToggled(newValue, post: post)
         }
-        .onChange(of: dueDateValue) { _, newValue in
-            if hasDueDate { post.dueDate = newValue }
+        .onChange(of: viewModel.dueDateValue) { _, newValue in
+            viewModel.dueDateChanged(newValue, post: post)
         }
-        .confirmationDialog("Delete this post?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .confirmationDialog("Delete this post?", isPresented: $viewModel.showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
-                context.delete(post)
+                viewModel.delete(post, context: context)
                 dismiss()
             }
             Button("Cancel", role: .cancel) {}
@@ -92,7 +86,7 @@ struct PostDetailView: View {
 
             if let next = post.stage.next {
                 Button {
-                    withAnimation(.snappy) { post.stage = next }
+                    viewModel.advanceStage(post)
                 } label: {
                     Label("Move to \(next.rawValue)", systemImage: "arrow.right")
                         .font(.subheadline.weight(.semibold))
@@ -122,11 +116,7 @@ struct PostDetailView: View {
                 Picker("Platform", selection: Binding(
                     get: { post.platform },
                     set: { newValue in
-                        let didChange = newValue != post.platform
-                        post.platform = newValue
-                        if didChange {
-                            post.resetChecklistForCurrentPlatform(context: context)
-                        }
+                        viewModel.updatePlatform(newValue, post: post, context: context)
                     }
                 )) {
                     ForEach(Platform.allCases) { platform in
@@ -136,13 +126,13 @@ struct PostDetailView: View {
                 .pickerStyle(.segmented)
             }
 
-            Toggle(isOn: $hasDueDate) {
+            Toggle(isOn: $viewModel.hasDueDate) {
                 Text("Due date").font(.subheadline)
             }
             .tint(Theme.accent)
 
-            if hasDueDate {
-                DatePicker("Due", selection: $dueDateValue, displayedComponents: .date)
+            if viewModel.hasDueDate {
+                DatePicker("Due", selection: $viewModel.dueDateValue, displayedComponents: .date)
                     .datePickerStyle(.compact)
                     .labelsHidden()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -161,14 +151,13 @@ struct PostDetailView: View {
                 Text("Production checklist")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                let done = post.checklist.filter(\.isComplete).count
-                Text("\(done)/\(post.checklist.count)")
+                Text("\(viewModel.completedCount(for: post))/\(post.checklist.count)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(Theme.textSecondary)
             }
 
             VStack(spacing: 8) {
-                ForEach(post.checklist.sorted(by: { $0.sortIndex < $1.sortIndex })) { item in
+                ForEach(viewModel.sortedChecklist(for: post)) { item in
                     ChecklistRow(item: item)
                 }
             }
@@ -178,7 +167,7 @@ struct PostDetailView: View {
 
     private var dangerSection: some View {
         Button(role: .destructive) {
-            showDeleteConfirm = true
+            viewModel.showDeleteConfirm = true
         } label: {
             Label("Delete post", systemImage: "trash")
                 .font(.subheadline.weight(.semibold))
