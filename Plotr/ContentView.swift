@@ -1,61 +1,47 @@
-//
-//  ContentView.swift
-//  Plotr
-//
-//  Created by Ben Do on 4/26/26.
-//
-
 import SwiftUI
 import SwiftData
 
-struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+struct RootView: View {
+    @AppStorage("hasOnboarded") private var hasOnboarded = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        Group {
+            if hasOnboarded {
+                MainTabView()
+            } else {
+                OnboardingView()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
         }
+        .background(Theme.background.ignoresSafeArea())
+    }
+}
+
+struct MainTabView: View {
+    init() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Theme.background)
+        appearance.shadowColor = UIColor(Theme.border)
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
+    var body: some View {
+        TabView {
+            BoardView()
+                .tabItem { Label("Board", systemImage: "rectangle.split.3x1") }
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
+            IdeaVaultView()
+                .tabItem { Label("Ideas", systemImage: "lightbulb") }
+
+            CalendarView()
+                .tabItem { Label("Calendar", systemImage: "calendar") }
         }
+        .tint(Theme.accent)
     }
 }
 
 #Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    RootView()
+        .modelContainer(for: [Post.self, ChecklistItem.self], inMemory: true)
 }
