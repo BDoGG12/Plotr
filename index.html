@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plotr — Plan your content like a pro</title>
+<meta name="description" content="Plotr is the project management app built for solo creators. Kanban board, idea vault, and content calendar — all in one place. Join the waitlist.">
+<meta property="og:title" content="Plotr — Plan your content like a pro">
+<meta property="og:description" content="The PM tool built for creators. Board, calendar, idea vault. Coming to iOS.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0b0a;
+  --bg2: #141311;
+  --bg3: #1c1a17;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ece4;
+  --text2: #9a9590;
+  --text3: #5a5650;
+  --accent: #c9a84c;
+  --accent2: #e8c97a;
+  --accent-dim: rgba(201,168,76,0.12);
+  --purple: #7c6ee0;
+  --purple-dim: rgba(124,110,224,0.15);
+  --green: #4a9e6e;
+  --green-dim: rgba(74,158,110,0.15);
+  --pink: #c45c8a;
+  --pink-dim: rgba(196,92,138,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+/* grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(12,11,10,0.8);
+  backdrop-filter: blur(16px);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.logo span { color: var(--accent); }
+
+.nav-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 100px;
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 140px 24px 100px;
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 65%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -55%);
+  pointer-events: none;
+}
+
+.hero-inner { position: relative; z-index: 1; max-width: 820px; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: rise 0.7s 0.1s ease forwards;
+}
+.eyebrow::before, .eyebrow::after {
+  content: '';
+  width: 28px; height: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(48px, 7.5vw, 96px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: rise 0.7s 0.2s ease forwards;
+}
+h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero-sub {
+  font-size: clamp(16px, 2vw, 19px);
+  color: var(--text2);
+  font-weight: 300;
+  max-width: 520px;
+  margin: 0 auto 52px;
+  line-height: 1.6;
+  opacity: 0;
+  animation: rise 0.7s 0.3s ease forwards;
+}
+
+/* ── WAITLIST FORM ── */
+.waitlist {
+  max-width: 460px;
+  margin: 0 auto;
+  opacity: 0;
+  animation: rise 0.7s 0.4s ease forwards;
+}
+
+.signup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #0c0b0a;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 32px;
+  border-radius: 100px;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.signup-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.25);
+}
+.signup-btn:active { transform: scale(0.98); }
+
+.form-note {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 12px;
+  text-align: center;
+}
+
+.success {
+  display: none;
+  background: var(--green-dim);
+  border: 1px solid rgba(74,158,110,0.3);
+  color: #6ecea0;
+  border-radius: 100px;
+  padding: 14px 24px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* social proof */
+.social-proof {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 44px;
+  opacity: 0;
+  animation: rise 0.7s 0.5s ease forwards;
+}
+
+.avatars { display: flex; }
+.av {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500;
+  margin-left: -9px;
+}
+.av:first-child { margin-left: 0; }
+.av1 { background: #2d2460; color: #afa9ec; }
+.av2 { background: #1a3d2b; color: #5dcaa5; }
+.av3 { background: #3d2010; color: #f0997b; }
+.av4 { background: #3a1f30; color: #ed93b1; }
+
+.proof-text { font-size: 13px; color: var(--text2); }
+.proof-text strong { color: var(--text); font-weight: 500; }
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 48px;
+  opacity: 0.2;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--text3);
+}
+.divider span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+
+/* ── PROBLEM STRIP ── */
+.problem {
+  padding: 80px 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.problem-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(26px, 3.5vw, 38px);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 40px;
+  color: var(--text);
+}
+.problem-title em { font-style: italic; color: var(--text2); }
+
+.pain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.pain-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 22px;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+.pain-item:hover { border-color: var(--border2); }
+
+.pain-item .x {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(196,92,138,0.15);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.pain-item .x svg { width: 12px; height: 12px; }
+
+.pain-item p {
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+/* ── FEATURES ── */
+.features {
+  padding: 80px 24px 100px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.section-head {
+  text-align: center;
+  margin-bottom: 56px;
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+}
+.section-title em { font-style: italic; }
+
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.feat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 30px;
+  transition: transform 0.2s, border-color 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.feat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, var(--card-glow, transparent) 0%, transparent 60%);
+  pointer-events: none;
+}
+.feat-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border2);
+}
+.feat-card.f1 { --card-glow: rgba(124,110,224,0.07); }
+.feat-card.f2 { --card-glow: rgba(201,168,76,0.07); }
+.feat-card.f3 { --card-glow: rgba(74,158,110,0.07); }
+
+.feat-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 18px;
+}
+.fi-purple { background: var(--purple-dim); }
+.fi-gold { background: var(--accent-dim); }
+.fi-green { background: var(--green-dim); }
+
+.feat-card h3 {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.feat-card p {
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+/* ── KANBAN PREVIEW ── */
+.preview {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 80px 24px;
+  overflow: hidden;
+}
+
+.preview-inner {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.kanban-demo {
+  margin-top: 44px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.kanban-demo::-webkit-scrollbar { height: 4px; }
+.kanban-demo::-webkit-scrollbar-track { background: transparent; }
+.kanban-demo::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.k-col {
+  flex-shrink: 0;
+  width: 170px;
+}
+.k-col-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 0 2px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.k-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.k-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s;
+}
+.k-card:hover { border-color: var(--border2); }
+
+.k-card-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.k-card-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.k-platform {
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+.kp-yt { background: rgba(124,110,224,0.2); color: #afa9ec; }
+.kp-tt { background: rgba(201,168,76,0.2); color: #e8c97a; }
+.kp-ig { background: rgba(196,92,138,0.2); color: #ed93b1; }
+
+.k-date { font-size: 9px; color: var(--text3); }
+
+.k-card.featured {
+  border-color: rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.04);
+}
+
+/* ── HOW IT WORKS ── */
+.how {
+  padding: 100px 24px;
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+  margin-top: 56px;
+  position: relative;
+}
+
+.step {
+  padding: 0 28px;
+  position: relative;
+}
+.step::after {
+  content: '→';
+  position: absolute;
+  right: -10px;
+  top: 20px;
+  color: var(--text3);
+  font-size: 16px;
+}
+.step:last-child::after { display: none; }
+
+.step-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 52px;
+  font-style: italic;
+  color: var(--accent);
+  opacity: 0.25;
+  line-height: 1;
+  margin-bottom: 14px;
+}
+.step h4 {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.step p {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* ── FOR SECTION ── */
+.for-section {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.platform-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 36px;
+}
+
+.ptag {
+  padding: 9px 20px;
+  border-radius: 100px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-weight: 300;
+  transition: all 0.2s;
+  cursor: default;
+}
+.ptag:hover { border-color: var(--border2); color: var(--text); }
+.ptag.yt { border-color: rgba(124,110,224,0.4); color: #afa9ec; background: var(--purple-dim); }
+.ptag.tt { border-color: rgba(201,168,76,0.4); color: #e8c97a; background: var(--accent-dim); }
+.ptag.ig { border-color: rgba(196,92,138,0.4); color: #ed93b1; background: var(--pink-dim); }
+
+/* ── BOTTOM CTA ── */
+.bottom-cta {
+  padding: 120px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.bottom-cta::before {
+  content: '';
+  position: absolute;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.bottom-cta h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 5vw, 60px);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-bottom: 18px;
+}
+.bottom-cta h2 em { font-style: italic; color: var(--accent); }
+
+.bottom-cta p {
+  font-size: 16px;
+  color: var(--text2);
+  font-weight: 300;
+  margin-bottom: 44px;
+}
+
+.offer-badge {
+  display: inline-block;
+  background: var(--accent-dim);
+  border: 1px solid rgba(201,168,76,0.25);
+  color: var(--accent2);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 16px;
+  border-radius: 100px;
+  margin-bottom: 28px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── FOOTER ── */
+footer {
+  padding: 24px 48px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text3);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+footer a { color: var(--text3); text-decoration: none; }
+footer a:hover { color: var(--text2); }
+
+/* ── ANIMATIONS ── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.reveal.in { opacity: 1; transform: none; }
+.reveal.d1 { transition-delay: 0.05s; }
+.reveal.d2 { transition-delay: 0.12s; }
+.reveal.d3 { transition-delay: 0.19s; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 640px) {
+  nav { padding: 16px 20px; }
+  .step::after { display: none; }
+  footer { padding: 20px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">pl<span>o</span>tr</a>
+  <span class="nav-tag">Coming to iOS</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">Built for solo creators</div>
+    <h1>Plan your content<br>like a <em>pro.</em></h1>
+    <p class="hero-sub">
+      Plotr is the project management app made for creators —
+      a Kanban board, idea vault, and content calendar, all in one place.
+      No more sticky notes. No more missed posts.
+    </p>
+
+    <div class="waitlist">
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLSdIip5KKfGXq7v9oDb3r4zMdQua1ZUpvkydlG7QgvZGpZ9Tkw/viewform?usp=header" target="_blank" rel="noopener" class="signup-btn">
+        Join the waitlist
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <p class="form-note">Early access + 50% off at launch. No spam, ever.</p>
+    </div>
+
+    <div class="social-proof">
+      <div class="avatars">
+        <div class="av av1">YK</div>
+        <div class="av av2">MR</div>
+        <div class="av av3">JS</div>
+        <div class="av av4">AL</div>
+      </div>
+      <p class="proof-text"><strong>140+ creators</strong> already on the waitlist</p>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem reveal">
+  <p class="problem-title">
+    You're posting consistently.<br>
+    <em>But your process is a mess.</em>
+  </p>
+  <div class="pain-grid">
+    <div class="pain-item reveal d1">
+      <div class="x">
+        <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="#c45c8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <p>Ideas scattered across Notes, voice memos, and random DMs to yourself</p>
+    </div>
+    <div class="pain-item reveal d2">
+      <div class="x">
+        <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="#c45c8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <p>No system for tracking what's scripted, filmed, or edited</p>
+    </div>
+    <div class="pain-item reveal d3">
+      <div class="x">
+        <svg viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2L2 10" stroke="#c45c8a" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <p>Posting last-minute because you never planned the week ahead</p>
+    </div>
+  </div>
+</section>
+
+<!-- DIVIDER -->
+<div class="divider"><span>what plotr does</span></div>
+
+<!-- FEATURES -->
+<section class="features">
+  <div class="section-head reveal">
+    <p class="section-label">The toolkit</p>
+    <h2 class="section-title">Everything your content<br><em>operation</em> needs</h2>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat-card f1 reveal d1">
+      <div class="feat-icon fi-purple">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="2" y="3" width="16" height="3" rx="1.5" fill="#afa9ec"/>
+          <rect x="2" y="8.5" width="10" height="3" rx="1.5" fill="#afa9ec" opacity=".5"/>
+          <rect x="2" y="14" width="7" height="3" rx="1.5" fill="#afa9ec" opacity=".3"/>
+        </svg>
+      </div>
+      <h3>Kanban board</h3>
+      <p>Move content through every stage — Idea, Script, Filming, Editing, Done. Built around how creators actually work, not how project managers think they do.</p>
+    </div>
+
+    <div class="feat-card f2 reveal d2">
+      <div class="feat-icon fi-gold">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2C7.8 2 6 3.8 6 6c0 1.5.8 2.8 2 3.5V11h4V9.5c1.2-.7 2-2 2-3.5 0-2.2-1.8-4-4-4z" fill="#e8c97a"/>
+          <rect x="7" y="12" width="6" height="1.5" rx=".75" fill="#e8c97a" opacity=".6"/>
+          <rect x="7.5" y="14.5" width="5" height="1.5" rx=".75" fill="#e8c97a" opacity=".35"/>
+        </svg>
+      </div>
+      <h3>Idea vault</h3>
+      <p>Capture ideas the moment they hit. Tag by platform, topic, and format. When you sit down to plan your week, your vault is full and ready — never a blank page again.</p>
+    </div>
+
+    <div class="feat-card f3 reveal d3">
+      <div class="feat-icon fi-green">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="3" y="4" width="14" height="13" rx="2" stroke="#6ecea0" stroke-width="1.3" fill="none"/>
+          <rect x="7" y="2" width="2" height="4" rx="1" fill="#6ecea0"/>
+          <rect x="11" y="2" width="2" height="4" rx="1" fill="#6ecea0"/>
+          <line x1="3" y1="8" x2="17" y2="8" stroke="#6ecea0" stroke-width="1.3" opacity=".5"/>
+          <circle cx="7" cy="12" r="1.2" fill="#6ecea0" opacity=".7"/>
+          <circle cx="10" cy="12" r="1.2" fill="#6ecea0"/>
+          <circle cx="13" cy="12" r="1.2" fill="#6ecea0" opacity=".4"/>
+        </svg>
+      </div>
+      <h3>Content calendar</h3>
+      <p>See your whole week at a glance. What's scheduled, what's overdue, what's ready to post. Color-coded by platform so you always know where you stand.</p>
+    </div>
+  </div>
+</section>
+
+<!-- KANBAN PREVIEW -->
+<section class="preview reveal">
+  <div class="preview-inner">
+    <div class="section-head">
+      <p class="section-label">The board</p>
+      <h2 class="section-title">Your content pipeline,<br><em>visualized</em></h2>
+    </div>
+
+    <div class="kanban-demo">
+      <!-- Idea -->
+      <div class="k-col">
+        <div class="k-col-head">
+          <div class="k-dot" style="background:#7c6ee0;"></div> Idea
+        </div>
+        <div class="k-card featured">
+          <div class="k-card-title">Morning routine vlog</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-yt">YouTube</span>
+            <span class="k-date">Apr 14</span>
+          </div>
+        </div>
+        <div class="k-card">
+          <div class="k-card-title">Budget desk setup tour</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-tt">TikTok</span>
+            <span class="k-date">Apr 16</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Script -->
+      <div class="k-col">
+        <div class="k-col-head">
+          <div class="k-dot" style="background:#c9a84c;"></div> Script
+        </div>
+        <div class="k-card">
+          <div class="k-card-title">Gear I wish I bought first</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-yt">YouTube</span>
+            <span class="k-date">Apr 18</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filming -->
+      <div class="k-col">
+        <div class="k-col-head">
+          <div class="k-dot" style="background:#c45c8a;"></div> Filming
+        </div>
+        <div class="k-card">
+          <div class="k-card-title">5 tools I use every day</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-ig">Instagram</span>
+            <span class="k-date">Apr 17</span>
+          </div>
+        </div>
+        <div class="k-card">
+          <div class="k-card-title">Collab with @alexcreates</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-yt">YouTube</span>
+            <span class="k-date">Apr 20</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editing -->
+      <div class="k-col">
+        <div class="k-col-head">
+          <div class="k-dot" style="background:#4a9e6e;"></div> Editing
+        </div>
+        <div class="k-card">
+          <div class="k-card-title">Behind the scenes: my edit process</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-ig">Instagram</span>
+            <span class="k-date">Apr 15</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Done -->
+      <div class="k-col">
+        <div class="k-col-head">
+          <div class="k-dot" style="background:#3a7a5a;"></div> Done
+        </div>
+        <div class="k-card" style="opacity:0.5;">
+          <div class="k-card-title">My creator toolkit 2026</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-yt">YouTube</span>
+            <span class="k-date">Apr 10</span>
+          </div>
+        </div>
+        <div class="k-card" style="opacity:0.5;">
+          <div class="k-card-title">POV: first 1k subscribers</div>
+          <div class="k-card-meta">
+            <span class="k-platform kp-tt">TikTok</span>
+            <span class="k-date">Apr 8</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how reveal">
+  <div class="section-head">
+    <p class="section-label">How it works</p>
+    <h2 class="section-title">From idea to posted<br><em>without the chaos</em></h2>
+  </div>
+
+  <div class="steps">
+    <div class="step reveal d1">
+      <div class="step-num">1</div>
+      <h4>Capture ideas</h4>
+      <p>Anything that sparks — text, voice, link. Tagged instantly by platform.</p>
+    </div>
+    <div class="step reveal d2">
+      <div class="step-num">2</div>
+      <h4>Plan your week</h4>
+      <p>Drag ideas onto the calendar. Set your posting rhythm and due dates.</p>
+    </div>
+    <div class="step reveal d3">
+      <div class="step-num">3</div>
+      <h4>Work the board</h4>
+      <p>Move each post through production stages. Know exactly what needs doing.</p>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">4</div>
+      <h4>Post with confidence</h4>
+      <p>No scrambling. Your content is ready, on time, every week.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOR CREATORS -->
+<section class="for-section reveal">
+  <div class="section-head">
+    <p class="section-label">Who it's for</p>
+    <h2 class="section-title">Built for the solo creator<br><em>running their own show</em></h2>
+  </div>
+  <div class="platform-tags">
+    <span class="ptag yt">YouTubers</span>
+    <span class="ptag tt">TikTokers</span>
+    <span class="ptag ig">Instagram creators</span>
+    <span class="ptag">Podcasters</span>
+    <span class="ptag">Newsletter writers</span>
+    <span class="ptag">Multi-platform creators</span>
+  </div>
+</section>
+
+<!-- BOTTOM CTA -->
+<section class="bottom-cta">
+  <div class="offer-badge">✦ &nbsp;Early access offer</div>
+  <h2>Be first.<br>Pay <em>half</em> forever.</h2>
+  <p>Early waitlist members get 50% off Plotr for life.<br>No credit card required.</p>
+
+  <div class="waitlist" style="position:relative;z-index:1;">
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdIip5KKfGXq7v9oDb3r4zMdQua1ZUpvkydlG7QgvZGpZ9Tkw/viewform?usp=header" target="_blank" rel="noopener" class="signup-btn">
+      Claim my spot
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <p class="form-note">No spam. Unsubscribe anytime.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="logo" style="font-family:'Playfair Display',serif;font-size:16px;color:var(--text3);">pl<span style="color:var(--accent);">o</span>tr</span>
+  <span>Coming to iOS · Made for creators</span>
+  <span>© 2026 Plotr</span>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => observer.observe(r));
+</script>
+
+</body>
+</html>
