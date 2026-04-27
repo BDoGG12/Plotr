@@ -1,23 +1,13 @@
-//
-//  PlotrApp.swift
-//  Plotr
-//
-//  Created by Ben Do on 4/26/26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct PlotrApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        let schema = Schema([Post.self, ChecklistItem.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +15,9 @@ struct PlotrApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .preferredColorScheme(.dark)
+                .tint(Theme.accent)
         }
         .modelContainer(sharedModelContainer)
     }
