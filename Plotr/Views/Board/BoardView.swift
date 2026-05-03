@@ -131,8 +131,16 @@ struct PostCard: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
 
-            HStack(spacing: 8) {
-                PlatformTag(platform: post.platform)
+            HStack(spacing: 6) {
+                let sortedPlatforms = post.platforms.sorted { $0.rawValue < $1.rawValue }
+                ForEach(sortedPlatforms.prefix(2), id: \.self) { platform in
+                    PlatformTag(platform: platform)
+                }
+                if sortedPlatforms.count > 2 {
+                    Text("+\(sortedPlatforms.count - 2)")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(Theme.textSecondary)
+                }
                 Spacer(minLength: 0)
                 if let due = post.dueDate {
                     HStack(spacing: 4) {
