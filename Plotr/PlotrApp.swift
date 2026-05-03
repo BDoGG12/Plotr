@@ -3,7 +3,7 @@ import SwiftData
 
 enum PlotrSchemaV1: VersionedSchema {
     static var versionIdentifier = Schema.Version(1, 0, 0)
-    static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self] }
+    static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self, VideoAttachment.self] }
 }
 
 enum PlotrMigrationPlan: SchemaMigrationPlan {
@@ -18,7 +18,7 @@ struct PlotrApp: App {
     var sharedModelContainer: ModelContainer = PlotrApp.makeContainer()
 
     private static func makeContainer() -> ModelContainer {
-        let schema = Schema([Post.self, ChecklistItem.self])
+        let schema = Schema([Post.self, ChecklistItem.self, VideoAttachment.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
             return try ModelContainer(
