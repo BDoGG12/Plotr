@@ -51,7 +51,7 @@ enum Platform: String, CaseIterable, Identifiable, Codable {
 final class Post {
     @Attribute(.unique) var id: UUID
     var title: String
-    var platformRaw: String
+    var platformsRaw: String
     var stageRaw: String
     var dueDate: Date?
     var pillar: String
@@ -74,7 +74,7 @@ final class Post {
     ) {
         self.id = id
         self.title = title
-        self.platformRaw = platform.rawValue
+        self.platformsRaw = platform.rawValue
         self.stageRaw = stage.rawValue
         self.dueDate = dueDate
         self.pillar = pillar
@@ -83,11 +83,23 @@ final class Post {
         self.createdAt = createdAt
     }
 
-    var platform: Platform {
-        get { Platform(rawValue: platformRaw) ?? .youtube }
-        set {
-            platformRaw = newValue.rawValue
+    var platforms: Set<Platform> {
+        get {
+            let parts = platformsRaw.split(separator: ",").map { String($0) }
+            return Set(parts.compactMap { Platform(rawValue: $0) })
         }
+        set {
+            platformsRaw = newValue.map { $0.rawValue }.joined(separator: ",")
+        }
+    }
+
+    var primaryPlatform: Platform {
+        platforms.sorted { $0.rawValue < $1.rawValue }.first ?? .youtube
+    }
+
+    var platform: Platform {
+        get { primaryPlatform }
+        set { platforms = [newValue] }
     }
 
     var stage: Stage {
@@ -95,17 +107,29 @@ final class Post {
         set { stageRaw = newValue.rawValue }
     }
 
-    func resetChecklistForCurrentPlatform(context: ModelContext) {
+    func resetChecklistForCurrentPlatforms(context: ModelContext) {
         for item in checklist {
             context.delete(item)
         }
         checklist = []
-        for (idx, title) in platform.defaultChecklist.enumerated() {
-            let item = ChecklistItem(title: title, sortIndex: idx)
-            context.insert(item)
-            item.post = self
-            checklist.append(item)
+
+        var seen: Set<String> = []
+        var sortIndex = 0
+        for platform in platforms.sorted(by: { $0.rawValue < $1.rawValue }) {
+            for title in platform.defaultChecklist {
+                guard !seen.contains(title) else { continue }
+                seen.insert(title)
+                let item = ChecklistItem(title: title, sortIndex: sortIndex)
+                context.insert(item)
+                item.post = self
+                checklist.append(item)
+                sortIndex += 1
+            }
         }
+    }
+
+    func resetChecklistForCurrentPlatform(context: ModelContext) {
+        resetChecklistForCurrentPlatforms(context: context)
     }
 }
 
