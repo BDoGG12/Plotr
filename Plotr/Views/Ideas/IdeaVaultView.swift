@@ -63,7 +63,7 @@ private struct IdeaRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             RoundedRectangle(cornerRadius: 4)
-                .fill(post.platform.color)
+                .fill(post.primaryPlatform.color)
                 .frame(width: 4)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -71,8 +71,16 @@ private struct IdeaRow: View {
                     .font(.callout.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
 
-                HStack(spacing: 8) {
-                    PlatformTag(platform: post.platform)
+                HStack(spacing: 6) {
+                    let sortedPlatforms = post.platforms.sorted { $0.rawValue < $1.rawValue }
+                    ForEach(sortedPlatforms.prefix(2), id: \.self) { platform in
+                        PlatformTag(platform: platform)
+                    }
+                    if sortedPlatforms.count > 2 {
+                        Text("+\(sortedPlatforms.count - 2)")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Theme.textSecondary)
+                    }
                     if !post.pillar.isEmpty {
                         Text(post.pillar)
                             .font(.caption)
