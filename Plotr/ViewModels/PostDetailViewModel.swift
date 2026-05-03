@@ -52,4 +52,29 @@ final class PostDetailViewModel {
     func completedCount(for post: Post) -> Int {
         post.checklist.filter(\.isComplete).count
     }
+
+    func addVideoAttachment(url: URL, post: Post, context: ModelContext) {
+        let bookmark = try? url.bookmarkData(
+            options: .minimalBookmark,
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+        let attachment = VideoAttachment(
+            bookmarkData: bookmark,
+            displayName: url.lastPathComponent,
+            stage: post.stage
+        )
+        context.insert(attachment)
+        attachment.post = post
+        post.videoAttachments.append(attachment)
+    }
+
+    func removeVideoAttachment(_ attachment: VideoAttachment, post: Post, context: ModelContext) {
+        post.videoAttachments.removeAll { $0.id == attachment.id }
+        context.delete(attachment)
+    }
+
+    func sortedAttachments(for post: Post) -> [VideoAttachment] {
+        post.videoAttachments.sorted(by: { $0.attachedAt < $1.attachedAt })
+    }
 }
