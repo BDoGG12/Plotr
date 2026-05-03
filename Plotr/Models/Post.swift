@@ -18,6 +18,13 @@ enum Stage: String, CaseIterable, Identifiable, Codable {
     }
 
     var index: Int { Stage.allCases.firstIndex(of: self) ?? 0 }
+
+    var supportsVideoAttachment: Bool {
+        switch self {
+        case .script, .filming, .editing: return true
+        case .idea, .done: return false
+        }
+    }
 }
 
 enum Platform: String, CaseIterable, Identifiable, Codable {
@@ -60,6 +67,8 @@ final class Post {
     var createdAt: Date
     @Relationship(deleteRule: .cascade, inverse: \ChecklistItem.post)
     var checklist: [ChecklistItem] = []
+    @Relationship(deleteRule: .cascade, inverse: \VideoAttachment.post)
+    var videoAttachments: [VideoAttachment] = []
 
     init(
         id: UUID = UUID(),
@@ -146,5 +155,45 @@ final class ChecklistItem {
         self.title = title
         self.isComplete = isComplete
         self.sortIndex = sortIndex
+    }
+}
+
+@Model
+final class VideoAttachment {
+    @Attribute(.unique) var id: UUID
+    var bookmarkData: Data?
+    var displayName: String
+    var stageRaw: String
+    var attachedAt: Date
+    var post: Post?
+
+    init(
+        id: UUID = UUID(),
+        bookmarkData: Data? = nil,
+        displayName: String = "",
+        stage: Stage = .filming,
+        attachedAt: Date = .now
+    ) {
+        self.id = id
+        self.bookmarkData = bookmarkData
+        self.displayName = displayName
+        self.stageRaw = stage.rawValue
+        self.attachedAt = attachedAt
+    }
+
+    var stage: Stage {
+        get { Stage(rawValue: stageRaw) ?? .filming }
+        set { stageRaw = newValue.rawValue }
+    }
+
+    var resolvedURL: URL? {
+        guard let bookmarkData else { return nil }
+        var isStale = false
+        return try? URL(
+            resolvingBookmarkData: bookmarkData,
+            options: [],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
     }
 }
