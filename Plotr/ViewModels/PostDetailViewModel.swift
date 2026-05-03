@@ -12,7 +12,7 @@ final class PostDetailViewModel {
         hasDueDate = post.dueDate != nil
         dueDateValue = post.dueDate ?? .now
         if post.checklist.isEmpty {
-            post.resetChecklistForCurrentPlatform(context: context)
+            post.resetChecklistForCurrentPlatforms(context: context)
         }
     }
 
@@ -24,12 +24,16 @@ final class PostDetailViewModel {
         if hasDueDate { post.dueDate = newValue }
     }
 
-    func updatePlatform(_ newValue: Platform, post: Post, context: ModelContext) {
-        let didChange = newValue != post.platform
-        post.platform = newValue
-        if didChange {
-            post.resetChecklistForCurrentPlatform(context: context)
+    func togglePlatform(_ platform: Platform, post: Post, context: ModelContext) {
+        var current = post.platforms
+        if current.contains(platform) {
+            guard current.count > 1 else { return }
+            current.remove(platform)
+        } else {
+            current.insert(platform)
         }
+        post.platforms = current
+        post.resetChecklistForCurrentPlatforms(context: context)
     }
 
     func advanceStage(_ post: Post) {
