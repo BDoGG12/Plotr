@@ -112,18 +112,17 @@ struct PostDetailView: View {
     private var fieldsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Platform").font(.footnote).foregroundStyle(Theme.textSecondary)
-                Picker("Platform", selection: Binding(
-                    get: { post.platform },
-                    set: { newValue in
-                        viewModel.updatePlatform(newValue, post: post, context: context)
-                    }
-                )) {
+                Text("Platforms").font(.footnote).foregroundStyle(Theme.textSecondary)
+                HStack(spacing: 8) {
                     ForEach(Platform.allCases) { platform in
-                        Text(platform.rawValue).tag(platform)
+                        PlatformToggleChip(
+                            platform: platform,
+                            isSelected: post.platforms.contains(platform)
+                        ) {
+                            viewModel.togglePlatform(platform, post: post, context: context)
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
             }
 
             Toggle(isOn: $viewModel.hasDueDate) {
@@ -187,6 +186,37 @@ struct PostDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.border))
         }
+    }
+}
+
+private struct PlatformToggleChip: View {
+    let platform: Platform
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(platform.color)
+                    .frame(width: 8, height: 8)
+                Text(platform.rawValue)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(isSelected ? Theme.textPrimary : Theme.textSecondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? platform.color.opacity(0.18) : Theme.surfaceElevated)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? platform.color : Theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .animation(.snappy, value: isSelected)
     }
 }
 
