@@ -50,8 +50,27 @@ struct PostTests {
     @Test func platformSetterUpdatesRawValue() {
         let post = Post()
         post.platform = .tiktok
-        #expect(post.platformRaw == "TikTok")
+        #expect(post.platformsRaw == "TikTok")
         #expect(post.platform == .tiktok)
+        #expect(post.platforms == [.tiktok])
+    }
+
+    @Test func platformsRoundTripFromCommaSeparatedString() {
+        let post = Post()
+        post.platformsRaw = "Instagram,YouTube"
+        #expect(post.platforms == Set([.instagram, .youtube]))
+
+        post.platforms = Set([.instagram, .youtube])
+        #expect(post.platforms == Set([.instagram, .youtube]))
+
+        let parts = Set(post.platformsRaw.split(separator: ",").map(String.init))
+        #expect(parts == Set(["Instagram", "YouTube"]))
+    }
+
+    @Test func primaryPlatformIsAlphabeticallyFirstSelected() {
+        let post = Post()
+        post.platforms = Set([.youtube, .instagram, .tiktok])
+        #expect(post.primaryPlatform == .instagram)
     }
 
     @Test func stageSetterUpdatesRawValue() {
@@ -64,7 +83,7 @@ struct PostTests {
     @Test func resetChecklistMatchesPlatformDefaults() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(platform: .instagram, in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
 
         let titles = post.checklist.sorted(by: { $0.sortIndex < $1.sortIndex }).map(\.title)
         #expect(titles == Platform.instagram.defaultChecklist)
@@ -73,11 +92,11 @@ struct PostTests {
     @Test func resetChecklistReplacesPriorItems() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(platform: .youtube, in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
         let firstCount = post.checklist.count
 
         post.platform = .tiktok
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
 
         #expect(post.checklist.count == firstCount)
         let titles = post.checklist.sorted(by: { $0.sortIndex < $1.sortIndex }).map(\.title)
