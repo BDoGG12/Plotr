@@ -46,7 +46,7 @@ final class CalendarViewModel {
     func uniquePlatforms(in posts: [Post]) -> [Platform] {
         var seen = Set<Platform>()
         var ordered: [Platform] = []
-        for p in posts.map(\.platform) where !seen.contains(p) {
+        for p in posts.flatMap(\.platforms) where !seen.contains(p) {
             seen.insert(p)
             ordered.append(p)
         }

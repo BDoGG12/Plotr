@@ -140,7 +140,7 @@ private struct CalendarPostRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Circle().fill(post.platform.color).frame(width: 8, height: 8)
+            Circle().fill(post.primaryPlatform.color).frame(width: 8, height: 8)
             Text(post.title.isEmpty ? "Untitled" : post.title)
                 .font(.subheadline)
                 .foregroundStyle(Theme.textPrimary)
