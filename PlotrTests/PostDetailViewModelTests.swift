@@ -20,7 +20,7 @@ struct PostDetailViewModelTests {
         let context = try TestSupport.makeContext()
         let due = Date(timeIntervalSince1970: 1_900_000_000)
         let post = TestSupport.insertPost(dueDate: due, in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
 
         let vm = PostDetailViewModel()
         vm.sync(from: post, context: context)
@@ -58,30 +58,53 @@ struct PostDetailViewModelTests {
         #expect(post.dueDate == chosen)
     }
 
-    @Test func updatePlatformResetsChecklistOnChange() throws {
+    @Test func togglePlatformAddsWhenNotSelected() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(platform: .youtube, in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
         let vm = PostDetailViewModel()
 
-        vm.updatePlatform(.tiktok, post: post, context: context)
+        vm.togglePlatform(.tiktok, post: post, context: context)
 
-        #expect(post.platform == .tiktok)
-        let titles = post.checklist.sorted(by: { $0.sortIndex < $1.sortIndex }).map(\.title)
-        #expect(titles == Platform.tiktok.defaultChecklist)
+        #expect(post.platforms == Set([.youtube, .tiktok]))
     }
 
-    @Test func updatePlatformIsNoOpWhenSame() throws {
+    @Test func togglePlatformRemovesWhenSelected() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(platform: .youtube, in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
-        let originalIds = post.checklist.map(\.id)
+        post.platforms = Set([.youtube, .tiktok])
+        post.resetChecklistForCurrentPlatforms(context: context)
         let vm = PostDetailViewModel()
 
-        vm.updatePlatform(.youtube, post: post, context: context)
+        vm.togglePlatform(.tiktok, post: post, context: context)
 
-        #expect(post.platform == .youtube)
-        #expect(post.checklist.map(\.id) == originalIds)
+        #expect(post.platforms == Set([.youtube]))
+    }
+
+    @Test func togglePlatformCannotDeselectLastPlatform() throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(platform: .youtube, in: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
+        let vm = PostDetailViewModel()
+
+        vm.togglePlatform(.youtube, post: post, context: context)
+
+        #expect(post.platforms == Set([.youtube]))
+    }
+
+    @Test func resetChecklistForMultiplePlatformsMergesAndDedupes() throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(platform: .youtube, in: context)
+        post.platforms = Set([.youtube, .tiktok])
+        post.resetChecklistForCurrentPlatforms(context: context)
+
+        let titles = post.checklist.map(\.title)
+        let titleSet = Set(titles)
+
+        #expect(titles.count == titleSet.count)
+
+        let expected = Set(Platform.youtube.defaultChecklist).union(Platform.tiktok.defaultChecklist)
+        #expect(titleSet == expected)
     }
 
     @Test func advanceStageMovesToNextStage() throws {
@@ -117,7 +140,7 @@ struct PostDetailViewModelTests {
     @Test func sortedChecklistIsOrderedBySortIndex() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
         let vm = PostDetailViewModel()
 
         let sorted = vm.sortedChecklist(for: post)
@@ -128,7 +151,7 @@ struct PostDetailViewModelTests {
     @Test func completedCountReflectsCompletedItems() throws {
         let context = try TestSupport.makeContext()
         let post = TestSupport.insertPost(in: context)
-        post.resetChecklistForCurrentPlatform(context: context)
+        post.resetChecklistForCurrentPlatforms(context: context)
         post.checklist[0].isComplete = true
         post.checklist[2].isComplete = true
         let vm = PostDetailViewModel()
