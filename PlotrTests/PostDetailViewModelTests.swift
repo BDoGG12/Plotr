@@ -158,4 +158,55 @@ struct PostDetailViewModelTests {
 
         #expect(vm.completedCount(for: post) == 2)
     }
+
+    @Test func addVideoAttachmentAppendsToPost() throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(stage: .filming, in: context)
+        let vm = PostDetailViewModel()
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("clip.mov")
+
+        vm.addVideoAttachment(url: url, post: post, context: context)
+
+        #expect(post.videoAttachments.count == 1)
+        let attachment = try #require(post.videoAttachments.first)
+        #expect(attachment.displayName == "clip.mov")
+        #expect(attachment.stage == .filming)
+        #expect(attachment.post?.id == post.id)
+    }
+
+    @Test func removeVideoAttachmentDeletesFromPostAndContext() throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(stage: .filming, in: context)
+        let vm = PostDetailViewModel()
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("clip.mov")
+        vm.addVideoAttachment(url: url, post: post, context: context)
+        try context.save()
+        let attachment = try #require(post.videoAttachments.first)
+
+        vm.removeVideoAttachment(attachment, post: post, context: context)
+        try context.save()
+
+        #expect(post.videoAttachments.isEmpty)
+        let remaining = try context.fetch(FetchDescriptor<VideoAttachment>())
+        #expect(remaining.isEmpty)
+    }
+
+    @Test func sortedAttachmentsIsAscendingByAttachedAt() throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(stage: .filming, in: context)
+        let vm = PostDetailViewModel()
+
+        let earliest = VideoAttachment(displayName: "first.mov", stage: .filming, attachedAt: Date(timeIntervalSince1970: 1_000))
+        let middle = VideoAttachment(displayName: "second.mov", stage: .filming, attachedAt: Date(timeIntervalSince1970: 2_000))
+        let latest = VideoAttachment(displayName: "third.mov", stage: .filming, attachedAt: Date(timeIntervalSince1970: 3_000))
+
+        for attachment in [latest, earliest, middle] {
+            context.insert(attachment)
+            attachment.post = post
+            post.videoAttachments.append(attachment)
+        }
+
+        let sorted = vm.sortedAttachments(for: post)
+        #expect(sorted.map(\.displayName) == ["first.mov", "second.mov", "third.mov"])
+    }
 }
