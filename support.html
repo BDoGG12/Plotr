@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plotr — Support</title>
+<meta name="description" content="Get help with Plotr — the content planning app built for creators. FAQs, troubleshooting, and contact support.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0c0b0a;
+  --bg2: #141311;
+  --bg3: #1c1a17;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ece4;
+  --text2: #9a9590;
+  --text3: #5a5650;
+  --accent: #c9a84c;
+  --accent2: #e8c97a;
+  --accent-dim: rgba(201,168,76,0.12);
+  --purple: #7c6ee0;
+  --purple-dim: rgba(124,110,224,0.15);
+  --green: #4a9e6e;
+  --green-dim: rgba(74,158,110,0.15);
+  --pink: #c45c8a;
+  --pink-dim: rgba(196,92,138,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+/* grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.4;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(12,11,10,0.8);
+  backdrop-filter: blur(16px);
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.logo span { color: var(--accent); }
+
+.nav-tag {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 100px;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+.d1 { transition-delay: 0.05s; }
+.d2 { transition-delay: 0.12s; }
+.d3 { transition-delay: 0.19s; }
+.d4 { transition-delay: 0.26s; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 52vh;
+  display: grid;
+  place-items: center;
+  padding: 160px 24px 80px;
+  position: relative;
+  text-align: center;
+  overflow: hidden;
+}
+
+.hero-glow {
+  position: absolute;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 65%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -55%);
+  pointer-events: none;
+}
+
+.hero-inner { position: relative; z-index: 1; max-width: 720px; }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: rise 0.7s 0.1s ease forwards;
+}
+.eyebrow::before, .eyebrow::after {
+  content: '';
+  width: 28px; height: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(42px, 6vw, 72px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: rise 0.7s 0.2s ease forwards;
+}
+h1 em { font-style: italic; color: var(--accent); }
+
+.hero-sub {
+  font-size: clamp(15px, 1.8vw, 18px);
+  color: var(--text2);
+  font-weight: 300;
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.6;
+  opacity: 0;
+  animation: rise 0.7s 0.3s ease forwards;
+}
+
+/* ── SEARCH BAR ── */
+.search-wrap {
+  max-width: 520px;
+  margin: 40px auto 0;
+  opacity: 0;
+  animation: rise 0.7s 0.4s ease forwards;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  padding: 14px 22px;
+  transition: border-color 0.2s;
+}
+.search-bar:focus-within { border-color: var(--accent); }
+.search-bar svg { flex-shrink: 0; opacity: 0.4; }
+.search-bar input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+}
+.search-bar input::placeholder { color: var(--text3); }
+
+/* ── DIVIDER ── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 48px;
+  opacity: 0.2;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--text3);
+}
+.divider span { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+
+/* ── SECTION SHARED ── */
+.section-head {
+  text-align: center;
+  margin-bottom: 52px;
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.section-title em { font-style: italic; color: var(--accent); }
+
+/* ── QUICK LINKS ── */
+.quick-links {
+  padding: 72px 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.quick-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.2s, transform 0.18s, background 0.2s;
+  cursor: pointer;
+}
+.quick-card:hover {
+  border-color: var(--accent);
+  background: var(--bg3);
+  transform: translateY(-3px);
+}
+
+.quick-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 20px;
+}
+.qi-gold { background: var(--accent-dim); }
+.qi-purple { background: var(--purple-dim); }
+.qi-green { background: var(--green-dim); }
+.qi-pink { background: var(--pink-dim); }
+
+.quick-card h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.quick-card p {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+}
+
+/* ── FAQ ── */
+.faq-section {
+  padding: 72px 24px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.faq-list { display: flex; flex-direction: column; gap: 2px; }
+
+.faq-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.faq-item:hover { border-color: var(--border2); }
+.faq-item.open { border-color: var(--accent); }
+
+.faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  user-select: none;
+  list-style: none;
+}
+.faq-q::marker, .faq-q::-webkit-details-marker { display: none; }
+
+.faq-chevron {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.25s, background 0.2s;
+}
+.faq-item.open .faq-chevron {
+  transform: rotate(180deg);
+  background: var(--accent-dim);
+}
+.faq-chevron svg { display: block; }
+
+.faq-a {
+  display: none;
+  padding: 0 24px 20px;
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.7;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.faq-item.open .faq-a { display: block; }
+
+.faq-a a { color: var(--accent); text-decoration: none; }
+.faq-a a:hover { text-decoration: underline; }
+
+/* ── TROUBLESHOOTING ── */
+.trouble-section {
+  padding: 72px 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.trouble-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.trouble-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.trouble-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 100px;
+  margin-bottom: 16px;
+}
+.tt-gold { background: var(--accent-dim); color: var(--accent); }
+.tt-purple { background: var(--purple-dim); color: var(--purple); }
+.tt-green { background: var(--green-dim); color: var(--green); }
+.tt-pink { background: var(--pink-dim); color: var(--pink); }
+
+.trouble-card h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.trouble-card p {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.65;
+}
+
+.steps-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 300;
+}
+
+.step-dot {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+/* ── CONTACT ── */
+.contact-section {
+  padding: 72px 24px 100px;
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 52px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-card::before {
+  content: '';
+  position: absolute;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(201,168,76,0.05) 0%, transparent 65%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.contact-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 3.5vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+.contact-card h2 em { font-style: italic; color: var(--accent); }
+
+.contact-card p {
+  font-size: 15px;
+  color: var(--text2);
+  font-weight: 300;
+  max-width: 400px;
+  margin: 0 auto 36px;
+}
+
+.contact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--accent);
+  color: #0c0b0a;
+  font-family: 'Sora', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 32px;
+  border-radius: 100px;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.contact-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.25);
+}
+
+.contact-note {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 16px;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text3);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  nav { padding: 16px 20px; }
+  footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+  .contact-card { padding: 36px 24px; }
+  .divider { padding: 0 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="logo">pl<span>o</span>tr</a>
+  <span class="nav-tag">Support</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">Help centre</div>
+    <h1>We've got you <em>covered</em></h1>
+    <p class="hero-sub">Find answers to common questions, troubleshoot issues, or get in touch with the team.</p>
+    <div class="search-wrap">
+      <div class="search-bar">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M13 13l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input type="text" placeholder="Search for help…" id="searchInput" oninput="filterFAQ(this.value)">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK LINKS -->
+<section class="quick-links">
+  <div class="section-head reveal">
+    <p class="section-label">Quick help</p>
+    <h2 class="section-title">What can we help<br><em>you with?</em></h2>
+  </div>
+
+  <div class="quick-grid">
+    <a class="quick-card reveal d1" href="#getting-started">
+      <div class="quick-icon qi-gold">🚀</div>
+      <h3>Getting started</h3>
+      <p>Set up your board, add your first post, and start planning.</p>
+    </a>
+    <a class="quick-card reveal d2" href="#faq">
+      <div class="quick-icon qi-purple">💡</div>
+      <h3>Using Plotr</h3>
+      <p>Stages, checklists, platforms, and the idea vault explained.</p>
+    </a>
+    <a class="quick-card reveal d3" href="#troubleshooting">
+      <div class="quick-icon qi-green">🔧</div>
+      <h3>Troubleshooting</h3>
+      <p>Fix common issues with data, syncing, and app crashes.</p>
+    </a>
+    <a class="quick-card reveal d4" href="#contact">
+      <div class="quick-icon qi-pink">✉️</div>
+      <h3>Contact us</h3>
+      <p>Still stuck? Reach out and we'll get back to you fast.</p>
+    </a>
+  </div>
+</section>
+
+<div class="divider"><span>frequently asked questions</span></div>
+
+<!-- FAQ -->
+<section class="faq-section" id="faq">
+  <div class="section-head reveal">
+    <p class="section-label">FAQ</p>
+    <h2 class="section-title">Questions we get<br><em>all the time</em></h2>
+  </div>
+
+  <div class="faq-list" id="faqList">
+
+    <!-- Getting started -->
+    <div class="faq-item reveal" data-tags="getting started new account setup">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        How do I get started with Plotr?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        When you open Plotr for the first time, you'll be guided through a quick onboarding flow. You'll pick your platforms (YouTube, TikTok, Instagram) and create your first post. From there, tap any card on the Board to start filling in details — title, content pillar, format, and due date.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d1" data-tags="getting started board stages idea script filming editing done">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        What are the five stages on the board?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Each post moves through five production stages:<br><br>
+        <strong style="color:var(--text)">Idea</strong> — the spark. Captured, not yet planned.<br>
+        <strong style="color:var(--text)">Script</strong> — you're writing or outlining the content.<br>
+        <strong style="color:var(--text)">Filming</strong> — you're in front of the camera.<br>
+        <strong style="color:var(--text)">Editing</strong> — you're cutting and polishing.<br>
+        <strong style="color:var(--text)">Done</strong> — posted and dusted.<br><br>
+        Tap "Move to [next stage]" inside any post to advance it.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d2" data-tags="platform youtube tiktok instagram multiple select">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        Can I assign a post to multiple platforms?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Yes! Open a post, scroll to the Platforms section, and tap as many platform chips as you need. You can select YouTube, TikTok, and Instagram simultaneously. The production checklist will automatically merge and deduplicate tasks from all selected platforms. At least one platform must always remain selected.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d3" data-tags="checklist production tasks platform">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        How does the production checklist work?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Each platform has a built-in production checklist tailored to that format. When you select one or more platforms, Plotr automatically generates a merged checklist with no duplicates. Tap any item to check it off. The progress counter in the top right updates as you complete tasks.
+      </div>
+    </div>
+
+    <div class="faq-item reveal" data-tags="video footage attach film script editing">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        How do I attach footage to a post?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor", stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        The Footage section appears automatically when a post is in the Script, Filming, or Editing stages. Tap the <strong style="color:var(--text)">Add</strong> button to open your Photos library and select a video clip. You can attach multiple clips to a single post. Each clip shows the filename and the stage it was attached during. Tap the ✕ to remove a clip.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d1" data-tags="idea vault search ideas">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        What is the Idea Vault?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        The Ideas tab shows every post that hasn't been scheduled yet — your running bank of content ideas. Use the search bar at the top to filter by title, platform, or content pillar. Tap any idea to open it and start fleshing it out.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d2" data-tags="calendar due date week schedule">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        How does the content calendar work?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        The Calendar tab shows a week-at-a-glance view of every post with a due date. Use the &lt; and &gt; arrows to navigate between weeks. Colour-coded dots represent each platform so you can see your content mix at a glance. Tap any post row to open it directly.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d3" data-tags="data privacy icloud sync backup">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        Is my data backed up?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Plotr stores all your data locally on your device using SwiftData. Your data is included in your regular iPhone backup via iCloud Backup or iTunes. We recommend keeping iCloud Backup enabled so your posts and ideas are always safe.
+      </div>
+    </div>
+
+    <div class="faq-item reveal" data-tags="delete post undo remove">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        Can I undo a deleted post?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Unfortunately, deleted posts cannot be recovered within the app. A confirmation prompt appears before any deletion to prevent accidental loss. We recommend using iCloud Backup so you can restore your device if needed.
+      </div>
+    </div>
+
+    <div class="faq-item reveal d1" data-tags="free cost price subscription">
+      <div class="faq-q" onclick="toggleFAQ(this)">
+        Is Plotr free to use?
+        <span class="faq-chevron">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+      <div class="faq-a">
+        Plotr is free to download and use. Early access members who joined the waitlist receive 50% off any future paid features for life. Pricing details will be announced when premium features launch.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"><span>troubleshooting</span></div>
+
+<!-- TROUBLESHOOTING -->
+<section class="trouble-section" id="troubleshooting">
+  <div class="section-head reveal">
+    <p class="section-label">Troubleshooting</p>
+    <h2 class="section-title">Something not working<br><em>right?</em></h2>
+  </div>
+
+  <div class="trouble-grid">
+
+    <div class="trouble-card reveal d1">
+      <span class="trouble-tag tt-gold">App crash</span>
+      <h3>App crashes on launch</h3>
+      <p>This is usually caused by a database migration issue after an update.</p>
+      <div class="steps-list">
+        <div class="step-row"><div class="step-dot">1</div><span>Force quit Plotr and reopen it</span></div>
+        <div class="step-row"><div class="step-dot">2</div><span>If it persists, delete and reinstall the app from the App Store</span></div>
+        <div class="step-row"><div class="step-dot">3</div><span>Restore from an iCloud Backup if you need to recover data</span></div>
+      </div>
+    </div>
+
+    <div class="trouble-card reveal d2">
+      <span class="trouble-tag tt-purple">Data</span>
+      <h3>Posts aren't saving</h3>
+      <p>If changes to posts aren't persisting between sessions:</p>
+      <div class="steps-list">
+        <div class="step-row"><div class="step-dot">1</div><span>Make sure you're not in Low Power Mode, which can restrict background activity</span></div>
+        <div class="step-row"><div class="step-dot">2</div><span>Check that you have at least 500MB of free storage on your device</span></div>
+        <div class="step-row"><div class="step-dot">3</div><span>Restart your iPhone and reopen Plotr</span></div>
+      </div>
+    </div>
+
+    <div class="trouble-card reveal d3">
+      <span class="trouble-tag tt-green">Footage</span>
+      <h3>Can't attach video clips</h3>
+      <p>If the footage section isn't appearing or videos won't attach:</p>
+      <div class="steps-list">
+        <div class="step-row"><div class="step-dot">1</div><span>Make sure the post is in Script, Filming, or Editing stage — footage is not available in Idea or Done</span></div>
+        <div class="step-row"><div class="step-dot">2</div><span>Go to Settings → Privacy → Photos and ensure Plotr has access</span></div>
+        <div class="step-row"><div class="step-dot">3</div><span>Try attaching a shorter clip first to rule out file size issues</span></div>
+      </div>
+    </div>
+
+    <div class="trouble-card reveal">
+      <span class="trouble-tag tt-pink">Display</span>
+      <h3>Calendar not showing posts</h3>
+      <p>If your posts aren't appearing in the calendar view:</p>
+      <div class="steps-list">
+        <div class="step-row"><div class="step-dot">1</div><span>Confirm each post has a due date set — posts without due dates won't appear in the calendar</span></div>
+        <div class="step-row"><div class="step-dot">2</div><span>Use the &lt; &gt; arrows to navigate to the correct week</span></div>
+        <div class="step-row"><div class="step-dot">3</div><span>Force quit and reopen the app to refresh the view</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"><span>get in touch</span></div>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="contact-card reveal">
+    <div class="section-label" style="margin-bottom:16px;">Still need help?</div>
+    <h2>We reply to <em>every</em> message</h2>
+    <p>Send us an email and we'll get back to you within 24 hours, usually much faster.</p>
+    <a href="mailto:bdo.appworkshop@gmail.com" class="contact-btn">
+      Email support
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <p class="contact-note">support@plotrapp.com · Response time under 24 hours</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span class="logo" style="font-family:'Playfair Display',serif;font-size:16px;color:var(--text3);">pl<span style="color:var(--accent);">o</span>tr</span>
+  <span>Support · <a href="index.html" style="color:var(--text3);text-decoration:none;">Back to home</a></span>
+  <span>© 2026 Plotr</span>
+</footer>
+
+<script>
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => observer.observe(r));
+
+  // FAQ accordion
+  function toggleFAQ(el) {
+    const item = el.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+
+  // FAQ search filter
+  function filterFAQ(query) {
+    const q = query.toLowerCase().trim();
+    document.querySelectorAll('.faq-item').forEach(item => {
+      const text = (item.textContent + item.dataset.tags).toLowerCase();
+      item.style.display = !q || text.includes(q) ? '' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>
