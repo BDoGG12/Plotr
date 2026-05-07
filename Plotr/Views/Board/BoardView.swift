@@ -29,6 +29,7 @@ struct BoardView: View {
                             BoardColumn(
                                 stage: stage,
                                 posts: viewModel.posts(posts, in: stage),
+                                showProBadge: !subscriptionManager.isPro,
                                 onAdd: { handleAddTapped(in: stage) },
                                 onDrop: { transfer in
                                     viewModel.move(transfer: transfer, to: stage, in: posts)
@@ -110,6 +111,7 @@ private struct PaywallPlaceholderView: View {
 private struct BoardColumn: View {
     let stage: Stage
     let posts: [Post]
+    let showProBadge: Bool
     let onAdd: () -> Void
     let onDrop: (PostTransfer) -> Bool
 
@@ -117,7 +119,7 @@ private struct BoardColumn: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            HStack(spacing: 6) {
                 Text(stage.rawValue)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
@@ -129,6 +131,9 @@ private struct BoardColumn: View {
                     .background(Theme.surface)
                     .clipShape(Capsule())
                 Spacer()
+                if showProBadge {
+                    ProBadge()
+                }
                 Button(action: onAdd) {
                     Image(systemName: "plus")
                         .font(.callout.weight(.semibold))
@@ -213,6 +218,18 @@ struct PostCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardSurface(padding: 12)
+    }
+}
+
+struct ProBadge: View {
+    var body: some View {
+        Text("PRO")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Theme.accent.opacity(0.15))
+            .clipShape(Capsule())
     }
 }
 
