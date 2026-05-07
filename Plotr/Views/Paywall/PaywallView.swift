@@ -1,4 +1,5 @@
 import SwiftUI
+import RevenueCat
 
 enum SubscriptionPlan {
     case monthly
@@ -11,6 +12,8 @@ struct PaywallView: View {
 
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var selectedPlan: SubscriptionPlan = .annual
+    @State private var isPurchasing: Bool = false
+    @State private var errorMessage: String? = nil
 
     init(dismiss: @escaping () -> Void, postCount: Int = 0) {
         self.dismiss = dismiss
@@ -169,19 +172,37 @@ struct PaywallView: View {
     private var purchaseControls: some View {
         VStack(spacing: 12) {
             Button {
-                startTrialTapped()
+                Task { await purchase() }
             } label: {
-                Text("Start 7-Day Free Trial")
-                    .font(.headline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+                ZStack {
+                    Text("Start 7-Day Free Trial")
+                        .font(.headline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .opacity(isPurchasing ? 0 : 1)
+
+                    if isPurchasing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(.black)
+                    }
+                }
             }
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
             .foregroundStyle(.black)
+            .disabled(isPurchasing)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+            }
 
             Button {
-                restorePurchasesTapped()
+                Task { await restorePurchases() }
             } label: {
                 Text("Restore Purchases")
                     .font(.subheadline.weight(.medium))
@@ -189,6 +210,7 @@ struct PaywallView: View {
                     .padding(.vertical, 4)
             }
             .buttonStyle(.plain)
+            .disabled(isPurchasing)
         }
     }
 
@@ -209,16 +231,55 @@ struct PaywallView: View {
         .padding(.top, 8)
     }
 
+    // MARK: - Purchase actions
+
+    private func purchase() async {
+        isPurchasing = true
+        errorMessage = nil
+        defer { isPurchasing = false }
+
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            guard let offering = offerings.current else {
+                errorMessage = "No subscription offerings available right now."
+                return
+            }
+
+            let package: Package?
+            switch selectedPlan {
+            case .monthly: package = offering.monthly
+            case .annual:  package = offering.annual
+            }
+
+            guard let package else {
+                errorMessage = "The selected plan isn't available right now."
+                return
+            }
+
+            let result = try await Purchases.shared.purchase(package: package)
+            guard !result.userCancelled else { return }
+
+            await subscriptionManager.refreshStatus()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func restorePurchases() async {
+        errorMessage = nil
+
+        do {
+            _ = try await Purchases.shared.restorePurchases()
+            await subscriptionManager.refreshStatus()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Placeholder actions
-    // These will be wired to RevenueCat in PLOT-08.
-
-    private func startTrialTapped() {
-        // Placeholder: trigger purchase flow for `selectedPlan`.
-    }
-
-    private func restorePurchasesTapped() {
-        // Placeholder: call Purchases.shared.restorePurchases.
-    }
+    // These will be wired to real URLs in a future story.
 
     private func termsTapped() {
         // Placeholder: open Terms of Service URL.
