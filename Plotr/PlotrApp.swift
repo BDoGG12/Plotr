@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import RevenueCat
 
 enum PlotrSchemaV1: VersionedSchema {
     static var versionIdentifier = Schema.Version(1, 0, 0)
@@ -16,6 +17,10 @@ enum PlotrMigrationPlan: SchemaMigrationPlan {
 @main
 struct PlotrApp: App {
     var sharedModelContainer: ModelContainer = PlotrApp.makeContainer()
+
+    init() {
+        Purchases.configure(withAPIKey: Constants.revenueCatAPIKey)
+    }
 
     private static func makeContainer() -> ModelContainer {
         let schema = Schema([Post.self, ChecklistItem.self, VideoAttachment.self])
