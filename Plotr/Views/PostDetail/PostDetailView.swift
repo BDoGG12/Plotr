@@ -239,9 +239,12 @@ struct PostDetailView: View {
                 .font(.title2)
                 .foregroundStyle(Theme.accent)
 
-            Text("Footage is a Pro feature")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.textPrimary)
+            HStack(spacing: 8) {
+                Text("Footage is a Pro feature")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                ProBadge()
+            }
 
             Text("Attach raw clips and finished videos with a Pro subscription.")
                 .font(.footnote)
