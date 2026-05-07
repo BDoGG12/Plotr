@@ -11,8 +11,12 @@ struct PostTransfer: Codable, Transferable {
 
 struct BoardView: View {
     @Environment(\.modelContext) private var context
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @Query(sort: \Post.createdAt, order: .reverse) private var posts: [Post]
     @State private var viewModel = BoardViewModel()
+    @State private var showPaywall: Bool = false
+
+    private static let freePostLimit = 5
 
     var body: some View {
         NavigationStack {
@@ -25,7 +29,7 @@ struct BoardView: View {
                             BoardColumn(
                                 stage: stage,
                                 posts: viewModel.posts(posts, in: stage),
-                                onAdd: { viewModel.addPost(in: stage, context: context) },
+                                onAdd: { handleAddTapped(in: stage) },
                                 onDrop: { transfer in
                                     viewModel.move(transfer: transfer, to: stage, in: posts)
                                 }
@@ -44,6 +48,60 @@ struct BoardView: View {
                 if let post = posts.first(where: { $0.id == id }) {
                     PostDetailView(post: post)
                 }
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallPlaceholderView()
+            }
+        }
+    }
+
+    private func handleAddTapped(in stage: Stage) {
+        if !subscriptionManager.isPro && posts.count >= Self.freePostLimit {
+            showPaywall = true
+            return
+        }
+        viewModel.addPost(in: stage, context: context)
+    }
+}
+
+private struct PaywallPlaceholderView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Theme.background.ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Spacer()
+
+                Image(systemName: "lock.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(Theme.accent)
+
+                Text("Upgrade to Pro")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.textPrimary)
+
+                Text("You've reached the 5 post limit on the free plan.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Dismiss")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.accent)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
         }
     }
@@ -178,5 +236,6 @@ struct PlatformTag: View {
 #Preview {
     BoardView()
         .modelContainer(for: [Post.self, ChecklistItem.self], inMemory: true)
+        .environment(SubscriptionManager())
         .preferredColorScheme(.dark)
 }
