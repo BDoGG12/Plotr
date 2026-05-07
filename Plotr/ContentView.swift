@@ -44,4 +44,5 @@ struct MainTabView: View {
 #Preview {
     RootView()
         .modelContainer(for: [Post.self, ChecklistItem.self], inMemory: true)
+        .environment(SubscriptionManager())
 }
