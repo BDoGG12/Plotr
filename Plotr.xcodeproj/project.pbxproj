@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D47A356C2FACDF830050F1CC /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D47A356B2FACDF830050F1CC /* StoreKit.framework */; };
+		D47A35712FACE1640050F1CC /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = D47A35702FACE1640050F1CC /* RevenueCat */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		D495A7BC2F9ED01900D97EB9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D47A356B2FACDF830050F1CC /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		D495A7AC2F9ED01800D97EB9 /* Plotr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Plotr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D495A7BB2F9ED01900D97EB9 /* PlotrTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlotrTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D495A7C52F9ED01900D97EB9 /* PlotrUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlotrUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +58,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D47A35712FACE1640050F1CC /* RevenueCat in Frameworks */,
+				D47A356C2FACDF830050F1CC /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +80,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D47A356A2FACDF830050F1CC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D47A356B2FACDF830050F1CC /* StoreKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		D495A7A32F9ED01800D97EB9 = {
 			isa = PBXGroup;
 			children = (
 				D495A7AE2F9ED01800D97EB9 /* Plotr */,
 				D495A7BE2F9ED01900D97EB9 /* PlotrTests */,
 				D495A7C82F9ED01900D97EB9 /* PlotrUITests */,
+				D47A356A2FACDF830050F1CC /* Frameworks */,
 				D495A7AD2F9ED01800D97EB9 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +129,7 @@
 			);
 			name = Plotr;
 			packageProductDependencies = (
+				D47A35702FACE1640050F1CC /* RevenueCat */,
 			);
 			productName = Plotr;
 			productReference = D495A7AC2F9ED01800D97EB9 /* Plotr.app */;
@@ -195,6 +213,9 @@
 			);
 			mainGroup = D495A7A32F9ED01800D97EB9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D47A356F2FACE1640050F1CC /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D495A7AD2F9ED01800D97EB9 /* Products */;
 			projectDirPath = "";
@@ -580,6 +601,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D47A356F2FACE1640050F1CC /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.71.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D47A35702FACE1640050F1CC /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D47A356F2FACE1640050F1CC /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D495A7A42F9ED01800D97EB9 /* Project object */;
 }
