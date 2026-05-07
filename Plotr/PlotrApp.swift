@@ -17,6 +17,7 @@ enum PlotrMigrationPlan: SchemaMigrationPlan {
 @main
 struct PlotrApp: App {
     var sharedModelContainer: ModelContainer = PlotrApp.makeContainer()
+    @State private var subscriptionManager = SubscriptionManager()
 
     init() {
         Purchases.configure(withAPIKey: Constants.revenueCatAPIKey)
@@ -60,6 +61,10 @@ struct PlotrApp: App {
             RootView()
                 .preferredColorScheme(.dark)
                 .tint(Theme.accent)
+                .environment(subscriptionManager)
+                .task {
+                    await subscriptionManager.setup()
+                }
         }
         .modelContainer(sharedModelContainer)
     }
