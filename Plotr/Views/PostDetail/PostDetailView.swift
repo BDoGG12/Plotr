@@ -27,8 +27,10 @@ struct PostDetailView: View {
     @Bindable var post: Post
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var viewModel = PostDetailViewModel()
     @State private var videoPickerItem: PhotosPickerItem?
+    @State private var showPaywall: Bool = false
 
     var body: some View {
         ZStack {
@@ -78,6 +80,9 @@ struct PostDetailView: View {
                 dismiss()
             }
             Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showPaywall) {
+            PostDetailPaywallPlaceholderView()
         }
     }
 
@@ -183,41 +188,81 @@ struct PostDetailView: View {
     @ViewBuilder
     private var videoSection: some View {
         if post.stage.supportsVideoAttachment {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label("Footage", systemImage: "film.stack")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                    Spacer()
-                    PhotosPicker(selection: $videoPickerItem, matching: .videos) {
-                        Label("Add", systemImage: "plus")
-                            .font(.footnote.weight(.semibold))
-                    }
-                    .tint(Theme.accent)
-                }
+            if subscriptionManager.isPro {
+                proVideoSection
+            } else {
+                lockedVideoSection
+            }
+        }
+    }
 
-                if post.videoAttachments.isEmpty {
-                    Text("No footage attached yet")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textSecondary.opacity(0.7))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 8)
-                } else {
-                    VStack(spacing: 8) {
-                        ForEach(viewModel.sortedAttachments(for: post)) { attachment in
-                            VideoAttachmentRow(attachment: attachment) {
-                                viewModel.removeVideoAttachment(attachment, post: post, context: context)
-                            }
+    private var proVideoSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Label("Footage", systemImage: "film.stack")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                PhotosPicker(selection: $videoPickerItem, matching: .videos) {
+                    Label("Add", systemImage: "plus")
+                        .font(.footnote.weight(.semibold))
+                }
+                .tint(Theme.accent)
+            }
+
+            if post.videoAttachments.isEmpty {
+                Text("No footage attached yet")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary.opacity(0.7))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(viewModel.sortedAttachments(for: post)) { attachment in
+                        VideoAttachmentRow(attachment: attachment) {
+                            viewModel.removeVideoAttachment(attachment, post: post, context: context)
                         }
                     }
                 }
-
-                Text("Clips are stored as bookmarks to the original file in your library.")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.textSecondary.opacity(0.6))
             }
-            .cardSurface(padding: 16)
+
+            Text("Clips are stored as bookmarks to the original file in your library.")
+                .font(.caption2)
+                .foregroundStyle(Theme.textSecondary.opacity(0.6))
         }
+        .cardSurface(padding: 16)
+    }
+
+    private var lockedVideoSection: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "lock.fill")
+                .font(.title2)
+                .foregroundStyle(Theme.accent)
+
+            Text("Footage is a Pro feature")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+
+            Text("Attach raw clips and finished videos with a Pro subscription.")
+                .font(.footnote)
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+
+            Button {
+                showPaywall = true
+            } label: {
+                Text("Upgrade to Pro")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            .foregroundStyle(.black)
+            .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .cardSurface(padding: 20)
     }
 
     private var checklistSection: some View {
@@ -293,6 +338,49 @@ private struct PlatformToggleChip: View {
         }
         .buttonStyle(.plain)
         .animation(.snappy, value: isSelected)
+    }
+}
+
+private struct PostDetailPaywallPlaceholderView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            Theme.background.ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                Spacer()
+
+                Image(systemName: "lock.fill")
+                    .font(.largeTitle)
+                    .foregroundStyle(Theme.accent)
+
+                Text("Upgrade to Pro")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.textPrimary)
+
+                Text("Unlock footage attachments and unlimited posts.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Dismiss")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.bordered)
+                .tint(Theme.accent)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+            }
+        }
     }
 }
 
