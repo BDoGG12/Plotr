@@ -7,8 +7,15 @@ enum SubscriptionPlan {
 
 struct PaywallView: View {
     let dismiss: () -> Void
+    let postCount: Int
 
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var selectedPlan: SubscriptionPlan = .annual
+
+    init(dismiss: @escaping () -> Void, postCount: Int = 0) {
+        self.dismiss = dismiss
+        self.postCount = postCount
+    }
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -17,6 +24,7 @@ struct PaywallView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header
+                    statusBanner
                     featureList
                     planCards
                     purchaseControls
@@ -62,6 +70,52 @@ struct PaywallView: View {
                 .foregroundStyle(Theme.textSecondary)
         }
         .padding(.top, 24)
+    }
+
+    @ViewBuilder
+    private var statusBanner: some View {
+        switch subscriptionManager.status {
+        case .trial:
+            statusCapsule(
+                systemImage: "clock.fill",
+                text: "Your free trial is active — subscribe to keep access after it ends.",
+                tint: Theme.accent
+            )
+        case .expired:
+            statusCapsule(
+                systemImage: "lock.fill",
+                text: expiredBannerText,
+                tint: .pink
+            )
+        case .pro:
+            EmptyView()
+        }
+    }
+
+    private var expiredBannerText: String {
+        let postsLabel = postCount == 1 ? "post" : "posts"
+        return "Your trial has ended. Your \(postCount) \(postsLabel) are locked."
+    }
+
+    private func statusCapsule(systemImage: String, text: String, tint: Color) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(tint)
+            Text(text)
+                .font(.footnote)
+                .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(tint.opacity(0.15))
+        .overlay(
+            Capsule()
+                .stroke(tint.opacity(0.4), lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 
     private var featureList: some View {
@@ -234,7 +288,26 @@ private struct PlanCard: View {
     }
 }
 
-#Preview {
-    PaywallView(dismiss: {})
+#Preview("Expired") {
+    let manager = SubscriptionManager()
+    manager.status = .expired
+    return PaywallView(dismiss: {}, postCount: 7)
+        .environment(manager)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Trial") {
+    let manager = SubscriptionManager()
+    manager.status = .trial
+    return PaywallView(dismiss: {}, postCount: 3)
+        .environment(manager)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Pro") {
+    let manager = SubscriptionManager()
+    manager.status = .pro
+    return PaywallView(dismiss: {}, postCount: 12)
+        .environment(manager)
         .preferredColorScheme(.dark)
 }
