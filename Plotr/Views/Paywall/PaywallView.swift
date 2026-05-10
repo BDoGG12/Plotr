@@ -215,17 +215,18 @@ struct PaywallView: View {
     }
 
     private var legalLinks: some View {
-        HStack(spacing: 4) {
+        // NOTE: Placeholder URLs — replace with the real Terms / Privacy URLs before shipping.
+        HStack(spacing: 6) {
             Spacer()
-            Button("Terms") { termsTapped() }
-                .font(.caption)
-                .foregroundStyle(Theme.textSecondary.opacity(0.8))
+            Link("Terms of Use", destination: URL(string: "https://bdogg12.github.io/Plotr/terms.html")!)
+                .font(.caption2)
+                .foregroundStyle(Theme.textSecondary)
             Text("·")
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(Theme.textSecondary.opacity(0.6))
-            Button("Privacy") { privacyTapped() }
-                .font(.caption)
-                .foregroundStyle(Theme.textSecondary.opacity(0.8))
+            Link("Privacy Policy", destination: URL(string: "https://bdogg12.github.io/Plotr/privacy.html")!)
+                .font(.caption2)
+                .foregroundStyle(Theme.textSecondary)
             Spacer()
         }
         .padding(.top, 8)
@@ -278,16 +279,6 @@ struct PaywallView: View {
         }
     }
 
-    // MARK: - Placeholder actions
-    // These will be wired to real URLs in a future story.
-
-    private func termsTapped() {
-        // Placeholder: open Terms of Service URL.
-    }
-
-    private func privacyTapped() {
-        // Placeholder: open Privacy Policy URL.
-    }
 }
 
 private struct PlanCard: View {
