@@ -51,7 +51,12 @@ struct BoardView: View {
                 }
             }
             .sheet(isPresented: $showPaywall) {
-                PaywallPlaceholderView()
+                PaywallView(
+                    dismiss: { showPaywall = false },
+                    postCount: posts.count
+                )
+                .presentationDetents([.large])
+                .interactiveDismissDisabled(false)
             }
         }
     }
@@ -62,49 +67,6 @@ struct BoardView: View {
             return
         }
         viewModel.addPost(in: stage, context: context)
-    }
-}
-
-private struct PaywallPlaceholderView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Theme.background.ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                Spacer()
-
-                Image(systemName: "lock.fill")
-                    .font(.largeTitle)
-                    .foregroundStyle(Theme.accent)
-
-                Text("Upgrade to Pro")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Theme.textPrimary)
-
-                Text("You've reached the 5 post limit on the free plan.")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                Spacer()
-
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Dismiss")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.bordered)
-                .tint(Theme.accent)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
     }
 }
 
