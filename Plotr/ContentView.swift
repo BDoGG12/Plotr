@@ -3,6 +3,10 @@ import SwiftData
 
 struct RootView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
+    @Environment(SubscriptionManager.self) private var subscriptionManager
+    @Query private var allPosts: [Post]
+    @State private var showTrialExpiry: Bool = false
+    @State private var showPaywall: Bool = false
 
     var body: some View {
         Group {
@@ -13,6 +17,32 @@ struct RootView: View {
             }
         }
         .background(Theme.background.ignoresSafeArea())
+        .onChange(of: subscriptionManager.hasJustExpired) { _, hasJustExpired in
+            if hasJustExpired {
+                showTrialExpiry = true
+            }
+        }
+        .sheet(isPresented: $showTrialExpiry) {
+            TrialExpirySheet(
+                postCount: allPosts.count,
+                onSubscribe: {
+                    showTrialExpiry = false
+                    showPaywall = true
+                },
+                onRemindLater: {
+                    subscriptionManager.markExpiredSeen()
+                    showTrialExpiry = false
+                }
+            )
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(
+                dismiss: { showPaywall = false },
+                postCount: allPosts.count
+            )
+            .presentationDetents([.large])
+            .interactiveDismissDisabled(false)
+        }
     }
 }
 
