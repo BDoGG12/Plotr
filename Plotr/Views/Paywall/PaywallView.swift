@@ -14,6 +14,8 @@ struct PaywallView: View {
     @State private var selectedPlan: SubscriptionPlan = .annual
     @State private var isPurchasing: Bool = false
     @State private var errorMessage: String? = nil
+    @State private var monthlyPrice: String = ""
+    @State private var annualPrice: String = ""
 
     init(dismiss: @escaping () -> Void, postCount: Int = 0) {
         self.dismiss = dismiss
@@ -42,6 +44,9 @@ struct PaywallView: View {
             closeButton
         }
         .foregroundStyle(Theme.textPrimary)
+        .onAppear {
+            Task { await loadPrices() }
+        }
     }
 
     // MARK: - Sections
@@ -147,9 +152,8 @@ struct PaywallView: View {
         VStack(spacing: 12) {
             PlanCard(
                 title: "Annual",
-                price: "$59.99",
-                period: "per year",
-                supportingText: "Just $5.00 / month",
+                price: annualPrice,
+                supportingText: "Best yearly value",
                 badge: "Best Value",
                 isSelected: selectedPlan == .annual
             ) {
@@ -158,8 +162,7 @@ struct PaywallView: View {
 
             PlanCard(
                 title: "Monthly",
-                price: "$8.99",
-                period: "per month",
+                price: monthlyPrice,
                 supportingText: nil,
                 badge: nil,
                 isSelected: selectedPlan == .monthly
@@ -279,12 +282,77 @@ struct PaywallView: View {
         }
     }
 
+    private func loadPrices() async {
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            print("[Paywall] offerings: \(offerings)")
+            print("[Paywall] offerings.all keys: \(Array(offerings.all.keys))")
+
+            // 1. Prefer the dashboard's "current" offering.
+            var offering = offerings.current
+            print("[Paywall] offerings.current: \(offering?.identifier ?? "nil")")
+
+            // 2. Fallback to a known-default identifier if `current` is unset.
+            if offering == nil {
+                offering = offerings["default"]
+                print("[Paywall] offerings[\"default\"]: \(offering?.identifier ?? "nil")")
+            }
+
+            var resolvedMonthly: String?
+            var resolvedAnnual: String?
+
+            if let offering {
+                print("[Paywall] inspecting offering '\(offering.identifier)' with \(offering.availablePackages.count) packages")
+                for package in offering.availablePackages {
+                    print("[Paywall]   package id=\(package.identifier) type=\(package.packageType) price=\(package.storeProduct.localizedPriceString)")
+                    if package.packageType == .monthly, resolvedMonthly == nil {
+                        resolvedMonthly = "\(package.storeProduct.localizedPriceString)/month"
+                    }
+                    if package.packageType == .annual, resolvedAnnual == nil {
+                        resolvedAnnual = "\(package.storeProduct.localizedPriceString)/year"
+                    }
+                }
+            }
+
+            // 3. Last resort: scan every offering for matching package types.
+            if resolvedMonthly == nil || resolvedAnnual == nil {
+                print("[Paywall] fallback: scanning offerings.all (missing monthly=\(resolvedMonthly == nil), annual=\(resolvedAnnual == nil))")
+                for (offeringID, candidate) in offerings.all {
+                    print("[Paywall]   offering '\(offeringID)' has \(candidate.availablePackages.count) packages")
+                    for package in candidate.availablePackages {
+                        print("[Paywall]     package id=\(package.identifier) type=\(package.packageType) price=\(package.storeProduct.localizedPriceString)")
+                        if package.packageType == .monthly, resolvedMonthly == nil {
+                            resolvedMonthly = "\(package.storeProduct.localizedPriceString)/month"
+                        }
+                        if package.packageType == .annual, resolvedAnnual == nil {
+                            resolvedAnnual = "\(package.storeProduct.localizedPriceString)/year"
+                        }
+                    }
+                    if resolvedMonthly != nil && resolvedAnnual != nil { break }
+                }
+            }
+
+            if let resolvedMonthly {
+                monthlyPrice = resolvedMonthly
+            } else {
+                print("[Paywall] no monthly package resolved — keeping fallback \(monthlyPrice)")
+            }
+            if let resolvedAnnual {
+                annualPrice = resolvedAnnual
+            } else {
+                print("[Paywall] no annual package resolved — keeping fallback \(annualPrice)")
+            }
+        } catch {
+            print("[Paywall] loadPrices error: \(error)")
+            // Keep the hard-coded fallback values already set in @State.
+        }
+    }
+
 }
 
 private struct PlanCard: View {
     let title: String
     let price: String
-    let period: String
     let supportingText: String?
     let badge: String?
     let isSelected: Bool
@@ -317,14 +385,9 @@ private struct PlanCard: View {
 
                 Spacer(minLength: 8)
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(price)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(period)
-                        .font(.caption2)
-                        .foregroundStyle(Theme.textSecondary)
-                }
+                Text(price)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
             }
             .padding(16)
             .frame(maxWidth: .infinity)

@@ -28,6 +28,7 @@ struct PostDetailView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(SubscriptionManager.self) private var subscriptionManager
+    @Query private var allPosts: [Post]
     @State private var viewModel = PostDetailViewModel()
     @State private var videoPickerItem: PhotosPickerItem?
     @State private var showPaywall: Bool = false
@@ -82,7 +83,12 @@ struct PostDetailView: View {
             Button("Cancel", role: .cancel) {}
         }
         .sheet(isPresented: $showPaywall) {
-            PostDetailPaywallPlaceholderView()
+            PaywallView(
+                dismiss: { showPaywall = false },
+                postCount: allPosts.count
+            )
+            .presentationDetents([.large])
+            .interactiveDismissDisabled(false)
         }
     }
 
@@ -344,48 +350,6 @@ private struct PlatformToggleChip: View {
     }
 }
 
-private struct PostDetailPaywallPlaceholderView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Theme.background.ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                Spacer()
-
-                Image(systemName: "lock.fill")
-                    .font(.largeTitle)
-                    .foregroundStyle(Theme.accent)
-
-                Text("Upgrade to Pro")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Theme.textPrimary)
-
-                Text("Unlock footage attachments and unlimited posts.")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-
-                Spacer()
-
-                Button {
-                    dismiss()
-                } label: {
-                    Text("Dismiss")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                }
-                .buttonStyle(.bordered)
-                .tint(Theme.accent)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
-    }
-}
 
 private struct VideoAttachmentRow: View {
     let attachment: VideoAttachment
