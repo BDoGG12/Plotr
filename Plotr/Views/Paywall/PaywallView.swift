@@ -14,6 +14,8 @@ struct PaywallView: View {
     @State private var selectedPlan: SubscriptionPlan = .annual
     @State private var isPurchasing: Bool = false
     @State private var errorMessage: String? = nil
+    @State private var monthlyPrice: String = "$4.99/month"
+    @State private var annualPrice: String = "$39.99/year"
 
     init(dismiss: @escaping () -> Void, postCount: Int = 0) {
         self.dismiss = dismiss
@@ -42,6 +44,9 @@ struct PaywallView: View {
             closeButton
         }
         .foregroundStyle(Theme.textPrimary)
+        .onAppear {
+            Task { await loadPrices() }
+        }
     }
 
     // MARK: - Sections
@@ -147,9 +152,8 @@ struct PaywallView: View {
         VStack(spacing: 12) {
             PlanCard(
                 title: "Annual",
-                price: "$59.99",
-                period: "per year",
-                supportingText: "Just $5.00 / month",
+                price: annualPrice,
+                supportingText: "Best yearly value",
                 badge: "Best Value",
                 isSelected: selectedPlan == .annual
             ) {
@@ -158,8 +162,7 @@ struct PaywallView: View {
 
             PlanCard(
                 title: "Monthly",
-                price: "$8.99",
-                period: "per month",
+                price: monthlyPrice,
                 supportingText: nil,
                 badge: nil,
                 isSelected: selectedPlan == .monthly
@@ -279,12 +282,27 @@ struct PaywallView: View {
         }
     }
 
+    private func loadPrices() async {
+        do {
+            let offerings = try await Purchases.shared.offerings()
+            guard let offering = offerings.current else { return }
+
+            if let monthly = offering.monthly {
+                monthlyPrice = "\(monthly.storeProduct.localizedPriceString)/month"
+            }
+            if let annual = offering.annual {
+                annualPrice = "\(annual.storeProduct.localizedPriceString)/year"
+            }
+        } catch {
+            // Keep the hard-coded fallback values already set in @State.
+        }
+    }
+
 }
 
 private struct PlanCard: View {
     let title: String
     let price: String
-    let period: String
     let supportingText: String?
     let badge: String?
     let isSelected: Bool
@@ -317,14 +335,9 @@ private struct PlanCard: View {
 
                 Spacer(minLength: 8)
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(price)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(period)
-                        .font(.caption2)
-                        .foregroundStyle(Theme.textSecondary)
-                }
+                Text(price)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
             }
             .padding(16)
             .frame(maxWidth: .infinity)
