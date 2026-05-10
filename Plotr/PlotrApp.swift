@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import RevenueCat
+import UIKit
 
 enum PlotrSchemaV1: VersionedSchema {
     static var versionIdentifier = Schema.Version(1, 0, 0)
@@ -64,6 +65,11 @@ struct PlotrApp: App {
                 .environment(subscriptionManager)
                 .task {
                     await subscriptionManager.setup()
+                }
+                .onReceive(
+                    NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+                ) { _ in
+                    Task { await subscriptionManager.refreshStatus() }
                 }
         }
         .modelContainer(sharedModelContainer)
