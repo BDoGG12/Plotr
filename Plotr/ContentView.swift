@@ -30,7 +30,7 @@ struct RootView: View {
                     showPaywall = true
                 },
                 onRemindLater: {
-                    subscriptionManager.markExpiredSeen()
+                    subscriptionManager.scheduleReminder()
                     showTrialExpiry = false
                 }
             )
