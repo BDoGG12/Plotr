@@ -25,13 +25,11 @@ struct BoardView: View {
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 14) {
-                        let lockedIDs = lockedPostIDs
                         ForEach(Stage.allCases) { stage in
                             BoardColumn(
                                 stage: stage,
                                 posts: viewModel.posts(posts, in: stage),
                                 showProBadge: !subscriptionManager.isPro,
-                                lockedPostIDs: lockedIDs,
                                 onAdd: { handleAddTapped(in: stage) },
                                 onDrop: { transfer in
                                     viewModel.move(transfer: transfer, to: stage, in: posts)
@@ -70,22 +68,12 @@ struct BoardView: View {
         }
         viewModel.addPost(in: stage, context: context)
     }
-
-    /// Posts that are locked under the soft-lock policy: only applies when the
-    /// trial has expired. The five oldest posts stay accessible (the user's
-    /// earliest content); anything created beyond that limit is locked.
-    private var lockedPostIDs: Set<UUID> {
-        guard subscriptionManager.status == .expired else { return [] }
-        let oldestFirst = posts.sorted { $0.createdAt < $1.createdAt }
-        return Set(oldestFirst.dropFirst(Self.freePostLimit).map(\.id))
-    }
 }
 
 private struct BoardColumn: View {
     let stage: Stage
     let posts: [Post]
     let showProBadge: Bool
-    let lockedPostIDs: Set<UUID>
     let onAdd: () -> Void
     let onDrop: (PostTransfer) -> Bool
 
@@ -125,7 +113,7 @@ private struct BoardColumn: View {
                 LazyVStack(spacing: 10) {
                     ForEach(posts) { post in
                         NavigationLink(value: post.id) {
-                            PostCard(post: post, isLocked: lockedPostIDs.contains(post.id))
+                            PostCard(post: post)
                         }
                         .buttonStyle(.plain)
                         .draggable(PostTransfer(id: post.id))
@@ -159,7 +147,6 @@ private struct BoardColumn: View {
 
 struct PostCard: View {
     let post: Post
-    var isLocked: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -193,25 +180,6 @@ struct PostCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardSurface(padding: 12)
-        .overlay {
-            if isLocked {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.black.opacity(0.45))
-                    .allowsHitTesting(false)
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if isLocked {
-                Image(systemName: "lock.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(6)
-                    .background(Color.black.opacity(0.65))
-                    .clipShape(Circle())
-                    .padding(8)
-                    .allowsHitTesting(false)
-            }
-        }
     }
 }
 
