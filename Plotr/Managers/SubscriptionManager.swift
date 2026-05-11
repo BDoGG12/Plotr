@@ -11,8 +11,10 @@ enum SubscriptionStatus {
 final class SubscriptionManager {
     var status: SubscriptionStatus = .expired
     var hasJustExpired: Bool = false
+    var isLoading: Bool = true
 
     private var previousStatus: SubscriptionStatus?
+    private var hasLoadedOnce: Bool = false
     private let remindLaterKey = "plotr_remind_later_date"
 
     var isPro: Bool {
@@ -20,6 +22,12 @@ final class SubscriptionManager {
     }
 
     func refreshStatus() async {
+        // Snapshot whether this is the first-ever fetch *before* we touch
+        // anything else. The expiry-prompt logic only runs on subsequent
+        // refreshes so the offboarding sheet can't flash up before we know
+        // the user's real entitlement state.
+        let wasLoadedBefore = hasLoadedOnce
+
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
             let proEntitlement = customerInfo.entitlements["pro"]
@@ -33,11 +41,15 @@ final class SubscriptionManager {
             status = .expired
         }
 
-        if status == .expired && checkShouldReprompt() {
-            hasJustExpired = true
-        } else {
-            hasJustExpired = false
+        if wasLoadedBefore {
+            if status == .expired && checkShouldReprompt() {
+                hasJustExpired = true
+            } else {
+                hasJustExpired = false
+            }
         }
+
+        hasLoadedOnce = true
         previousStatus = status
     }
 
@@ -64,6 +76,8 @@ final class SubscriptionManager {
     }
 
     func setup() async {
+        isLoading = true
         await refreshStatus()
+        isLoading = false
     }
 }
