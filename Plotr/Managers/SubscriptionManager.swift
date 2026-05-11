@@ -22,12 +22,6 @@ final class SubscriptionManager {
     }
 
     func refreshStatus() async {
-        // Snapshot whether this is the first-ever fetch *before* we touch
-        // anything else. The expiry-prompt logic only runs on subsequent
-        // refreshes so the offboarding sheet can't flash up before we know
-        // the user's real entitlement state.
-        let wasLoadedBefore = hasLoadedOnce
-
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
             let proEntitlement = customerInfo.entitlements["pro"]
@@ -41,15 +35,21 @@ final class SubscriptionManager {
             status = .expired
         }
 
-        if wasLoadedBefore {
-            if status == .expired && checkShouldReprompt() {
-                hasJustExpired = true
-            } else {
-                hasJustExpired = false
-            }
+        // Mark the first fetch as complete *before* evaluating expiry so
+        // observers can rely on `hasLoadedOnce == true` once any value of
+        // `hasJustExpired` has been computed.
+        hasLoadedOnce = true
+
+        // Evaluate expiry on every refresh — including the first one — so a
+        // subscription that ended while the app was closed surfaces the
+        // offboarding sheet on next launch (not just on a trial→expired
+        // transition observed in-session).
+        if status == .expired && checkShouldReprompt() {
+            hasJustExpired = true
+        } else {
+            hasJustExpired = false
         }
 
-        hasLoadedOnce = true
         previousStatus = status
     }
 
