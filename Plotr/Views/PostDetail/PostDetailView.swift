@@ -39,14 +39,11 @@ struct PostDetailView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    softLockBanner
                     titleSection
                     stageProgressSection
                     fieldsSection
-                        .disabled(!subscriptionManager.isPro)
                     videoSection
                     checklistSection
-                        .disabled(!subscriptionManager.isPro)
                     dangerSection
                 }
                 .padding(20)
@@ -95,51 +92,10 @@ struct PostDetailView: View {
         }
     }
 
-    @ViewBuilder
-    private var softLockBanner: some View {
-        if subscriptionManager.status == .expired {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "lock.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.yellow)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Your trial has ended. Subscribe to edit this post.")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 8)
-
-                Button {
-                    showPaywall = true
-                } label: {
-                    Text("Subscribe")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.yellow)
-                .foregroundStyle(.black)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.yellow.opacity(0.15))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.yellow.opacity(0.45), lineWidth: 1)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
-    }
-
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Title").font(.footnote).foregroundStyle(Theme.textSecondary)
             TextField("", text: $post.title, prompt: Text("Untitled post").foregroundStyle(Theme.textSecondary.opacity(0.6)))
-                .disabled(!subscriptionManager.isPro)
                 .font(.title3.weight(.semibold))
                 .padding(12)
                 .background(Theme.surfaceElevated)
@@ -187,7 +143,6 @@ struct PostDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Theme.accent)
                 .foregroundStyle(.black)
-                .disabled(!subscriptionManager.isPro)
             } else {
                 Label("Done", systemImage: "checkmark.seal.fill")
                     .font(.subheadline.weight(.semibold))
