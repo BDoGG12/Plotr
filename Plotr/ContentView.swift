@@ -18,7 +18,7 @@ struct RootView: View {
         }
         .background(Theme.background.ignoresSafeArea())
         .onChange(of: subscriptionManager.hasJustExpired) { _, hasJustExpired in
-            if hasJustExpired {
+            if hasJustExpired && subscriptionManager.isLoading == false {
                 showTrialExpiry = true
             }
         }
