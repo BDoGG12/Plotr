@@ -1,5 +1,6 @@
 import Foundation
 import RevenueCat
+import StoreKit
 
 enum SubscriptionStatus {
     case trial
@@ -78,6 +79,33 @@ final class SubscriptionManager {
     func setup() async {
         isLoading = true
         await refreshStatus()
+
+        // On a brand-new install (no verified App Store transaction yet)
+        // there's no entitlement history, so suppress the expiry sheet —
+        // the user has never had Pro to "lose". Returning users have a
+        // verified `AppTransaction` from the App Store and follow the
+        // normal expiry path.
+        if await isNewInstall() {
+            hasJustExpired = false
+        }
+
         isLoading = false
+    }
+
+    /// Returns `true` when StoreKit 2 has no verified `AppTransaction` on file
+    /// for this app — i.e. this is a fresh install that has never made any
+    /// purchase (including starting a trial). Returns `false` only for a
+    /// `.verified` result; an `.unverified` result is treated as a new install
+    /// since we can't trust it as proof of prior entitlement.
+    private func isNewInstall() async -> Bool {
+        guard let result = try? await AppTransaction.shared else {
+            return true
+        }
+        switch result {
+        case .verified:
+            return false
+        case .unverified:
+            return true
+        }
     }
 }
