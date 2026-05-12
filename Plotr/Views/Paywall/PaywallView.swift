@@ -275,8 +275,18 @@ struct PaywallView: View {
 
         do {
             _ = try await Purchases.shared.restorePurchases()
+
+            // Give RevenueCat a beat to propagate the restored entitlement
+            // before we read it back via `refreshStatus`.
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+
             await subscriptionManager.refreshStatus()
-            dismiss()
+
+            if subscriptionManager.isPro {
+                dismiss()
+            } else {
+                errorMessage = "No active subscription found. If you believe this is an error please contact support at bdo.appworkshop@gmail.com"
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
