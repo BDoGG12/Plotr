@@ -8,10 +8,17 @@ enum PlotrSchemaV1: VersionedSchema {
     static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self, VideoAttachment.self] }
 }
 
+/// Adds `script: String` (default `""`) to `Post`. Lightweight-migratable
+/// since the new property has a default value.
+enum PlotrSchemaV2: VersionedSchema {
+    static var versionIdentifier = Schema.Version(2, 0, 0)
+    static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self, VideoAttachment.self] }
+}
+
 enum PlotrMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [PlotrSchemaV1.self] }
+    static var schemas: [any VersionedSchema.Type] { [PlotrSchemaV1.self, PlotrSchemaV2.self] }
     static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: PlotrSchemaV1.self, toVersion: PlotrSchemaV1.self)]
+        [.lightweight(fromVersion: PlotrSchemaV1.self, toVersion: PlotrSchemaV2.self)]
     }
 }
 
