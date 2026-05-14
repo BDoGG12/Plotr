@@ -42,6 +42,7 @@ struct PostDetailView: View {
                     titleSection
                     stageProgressSection
                     fieldsSection
+                    scriptSection
                     videoSection
                     checklistSection
                     dangerSection
@@ -189,6 +190,39 @@ struct PostDetailView: View {
             textField(label: "Estimated length", text: $post.estimatedLength, placeholder: "e.g. 8 min")
         }
         .cardSurface(padding: 16)
+    }
+
+    @ViewBuilder
+    private var scriptSection: some View {
+        if post.stage == .script || post.stage == .filming || post.stage == .editing {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Script", systemImage: "pencil.and.outline")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer()
+                    if post.hasScript {
+                        Text("\(scriptWordCount) words")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Theme.accent.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
+
+                ScriptEditorView(post: post, postCount: allPosts.count)
+            }
+            .cardSurface(padding: 16)
+        }
+    }
+
+    private var scriptWordCount: Int {
+        post.script
+            .split(whereSeparator: { $0.isWhitespace })
+            .filter { !$0.isEmpty }
+            .count
     }
 
     @ViewBuilder
