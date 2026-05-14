@@ -7,6 +7,8 @@ struct ScriptEditorView: View {
 
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall: Bool = false
+    @State private var savedIndicator: Bool = false
+    @State private var savedResetTask: Task<Void, Never>?
 
     var body: some View {
         Group {
@@ -22,6 +24,18 @@ struct ScriptEditorView: View {
                 postCount: postCount
             )
             .presentationDetents([.large])
+        }
+        .onChange(of: post.script) {
+            savedIndicator = true
+
+            // Cancel any in-flight reset so rapid keystrokes don't flicker
+            // the indicator. Only the most recent reset task gets to run.
+            savedResetTask?.cancel()
+            savedResetTask = Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                guard !Task.isCancelled else { return }
+                await MainActor.run { savedIndicator = false }
+            }
         }
     }
 
@@ -62,10 +76,24 @@ struct ScriptEditorView: View {
     }
 
     private var statsBar: some View {
-        Text("\(wordCount) words · \(post.script.count) characters")
-            .font(.caption)
-            .foregroundStyle(Theme.textSecondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        HStack(spacing: 8) {
+            Text("\(wordCount) words · \(post.script.count) characters")
+                .font(.caption)
+                .foregroundStyle(Theme.textSecondary)
+
+            Spacer()
+
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Theme.accent)
+                Text("Saved")
+                    .font(.caption)
+                    .foregroundStyle(Theme.accent)
+            }
+            .opacity(savedIndicator ? 1 : 0)
+            .animation(.easeInOut(duration: 0.3), value: savedIndicator)
+        }
     }
 
     private var wordCount: Int {
