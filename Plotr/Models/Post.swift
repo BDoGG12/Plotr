@@ -65,6 +65,7 @@ final class Post {
     var format: String
     var estimatedLength: String
     var createdAt: Date
+    var script: String = ""
     @Relationship(deleteRule: .cascade, inverse: \ChecklistItem.post)
     var checklist: [ChecklistItem] = []
     @Relationship(deleteRule: .cascade, inverse: \VideoAttachment.post)
@@ -79,7 +80,8 @@ final class Post {
         pillar: String = "",
         format: String = "",
         estimatedLength: String = "",
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        script: String = ""
     ) {
         self.id = id
         self.title = title
@@ -90,6 +92,11 @@ final class Post {
         self.format = format
         self.estimatedLength = estimatedLength
         self.createdAt = createdAt
+        self.script = script
+    }
+
+    var hasScript: Bool {
+        !script.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var platforms: Set<Platform> {
