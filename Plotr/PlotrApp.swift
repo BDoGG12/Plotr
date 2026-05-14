@@ -3,24 +3,22 @@ import SwiftData
 import RevenueCat
 import UIKit
 
-enum PlotrSchemaV1: VersionedSchema {
-    static var versionIdentifier = Schema.Version(1, 0, 0)
-    static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self, VideoAttachment.self] }
-}
-
-/// Adds `script: String` (default `""`) to `Post`. Lightweight-migratable
-/// since the new property has a default value.
-enum PlotrSchemaV2: VersionedSchema {
-    static var versionIdentifier = Schema.Version(2, 0, 0)
-    static var models: [any PersistentModel.Type] { [Post.self, ChecklistItem.self, VideoAttachment.self] }
-}
-
-enum PlotrMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [PlotrSchemaV1.self, PlotrSchemaV2.self] }
-    static var stages: [MigrationStage] {
-        [.lightweight(fromVersion: PlotrSchemaV1.self, toVersion: PlotrSchemaV2.self)]
-    }
-}
+// MARK: - SwiftData container
+//
+// Previously this file declared `PlotrSchemaV1` and `PlotrSchemaV2` as separate
+// `VersionedSchema`s, but both referenced the same current model types
+// (`Post.self`, `ChecklistItem.self`, `VideoAttachment.self`), which produced
+// identical schema checksums and triggered SwiftData's
+// "Duplicate version checksums detected" runtime crash.
+//
+// To declare a real V1 ➜ V2 ➜ V3 history we'd need historical `@Model`
+// definitions (e.g. an old `Post` with `platformRaw`) nested per version, which
+// can't live alongside the current `Post` without touching `Models/Post.swift`.
+// Until that refactor happens, we run a single-schema container and rely on
+// SwiftData's built-in auto-migration to handle additive changes (e.g. the new
+// `script: String = ""` property), and on `wipeStore(at:)` to recover from any
+// schema delta auto-migration can't handle (e.g. the historical
+// `platformRaw` ➜ `platformsRaw` rename).
 
 @main
 struct PlotrApp: App {
@@ -35,11 +33,7 @@ struct PlotrApp: App {
         let schema = Schema([Post.self, ChecklistItem.self, VideoAttachment.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(
-                for: schema,
-                migrationPlan: PlotrMigrationPlan.self,
-                configurations: [config]
-            )
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             wipeStore(at: config.url)
             do {
