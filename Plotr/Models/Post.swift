@@ -54,6 +54,40 @@ enum Platform: String, CaseIterable, Identifiable, Codable {
     }
 }
 
+enum SectionMarker: CaseIterable {
+    case hook
+    case mainPoint
+    case bRoll
+    case cta
+
+    var displayName: String {
+        switch self {
+        case .hook:      return "Hook"
+        case .mainPoint: return "Main Point"
+        case .bRoll:     return "B-Roll"
+        case .cta:       return "CTA"
+        }
+    }
+
+    var emoji: String {
+        switch self {
+        case .hook:      return "🎣"
+        case .mainPoint: return "💡"
+        case .bRoll:     return "🎬"
+        case .cta:       return "📢"
+        }
+    }
+
+    var token: String {
+        switch self {
+        case .hook:      return "##HOOK##"
+        case .mainPoint: return "##MAIN_POINT##"
+        case .bRoll:     return "##B_ROLL##"
+        case .cta:       return "##CTA##"
+        }
+    }
+}
+
 @Model
 final class Post {
     @Attribute(.unique) var id: UUID
@@ -97,6 +131,18 @@ final class Post {
 
     var hasScript: Bool {
         !script.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Replaces every `SectionMarker` token in the script with a human-readable
+    /// label of the form `"--- 🎣 Hook ---"`. Tokens that aren't present are
+    /// left untouched; non-marker text passes through unchanged.
+    func scriptWithRenderedMarkers() -> String {
+        var rendered = script
+        for marker in SectionMarker.allCases {
+            let label = "--- \(marker.emoji) \(marker.displayName) ---"
+            rendered = rendered.replacingOccurrences(of: marker.token, with: label)
+        }
+        return rendered
     }
 
     var platforms: Set<Platform> {
