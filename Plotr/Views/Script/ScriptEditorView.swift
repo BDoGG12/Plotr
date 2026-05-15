@@ -9,6 +9,7 @@ struct ScriptEditorView: View {
     @State private var showPaywall: Bool = false
     @State private var savedIndicator: Bool = false
     @State private var savedResetTask: Task<Void, Never>?
+    @FocusState private var isEditorFocused: Bool
 
     var body: some View {
         Group {
@@ -66,6 +67,7 @@ struct ScriptEditorView: View {
                 .background(Color.clear)
                 .padding(8)
                 .frame(minHeight: 200)
+                .focused($isEditorFocused)
         }
         .background(Theme.surfaceElevated)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -73,6 +75,19 @@ struct ScriptEditorView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Theme.border)
         )
+        .overlay(alignment: .topTrailing) {
+            Button {
+                isEditorFocused = false
+            } label: {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(Theme.accent)
+                    .padding(8)
+            }
+            .buttonStyle(.plain)
+            .opacity(isEditorFocused ? 1 : 0)
+            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+        }
     }
 
     private var statsBar: some View {
