@@ -28,8 +28,11 @@ struct ScriptEditorView: View {
             .presentationDetents([.large])
         }
         .sheet(isPresented: $showFullScreen) {
-            FullScreenScriptPlaceholder()
-                .presentationDetents([.large])
+            FullScreenScriptView(
+                post: post,
+                dismiss: { showFullScreen = false }
+            )
+            .presentationDetents([.large])
         }
         .onChange(of: post.script) {
             savedIndicator = true
@@ -167,18 +170,6 @@ struct ScriptEditorView: View {
         }
         .frame(maxWidth: .infinity)
         .cardSurface(padding: 20)
-    }
-}
-
-// Placeholder until `FullScreenScriptView` lands in PLOT-68.
-private struct FullScreenScriptPlaceholder: View {
-    var body: some View {
-        ZStack {
-            Theme.background.ignoresSafeArea()
-            Text("Full Screen Coming Soon")
-                .font(.headline)
-                .foregroundStyle(Theme.textPrimary)
-        }
     }
 }
 
