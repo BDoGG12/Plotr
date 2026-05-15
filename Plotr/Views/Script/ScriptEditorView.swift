@@ -33,6 +33,8 @@ struct ScriptEditorView: View {
                 dismiss: { showFullScreen = false }
             )
             .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
+            .interactiveDismissDisabled(false)
         }
         .onChange(of: post.script) {
             savedIndicator = true
@@ -62,7 +64,9 @@ struct ScriptEditorView: View {
         HStack {
             Spacer()
             Button {
-                showFullScreen = true
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    showFullScreen = true
+                }
             } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
                     .font(.callout.weight(.semibold))

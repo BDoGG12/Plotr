@@ -19,6 +19,8 @@ struct FullScreenScriptView: View {
                 bottomBar
             }
         }
+        .transition(.move(edge: .bottom))
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: true)
         .onChange(of: post.script) {
             savedIndicator = true
 
