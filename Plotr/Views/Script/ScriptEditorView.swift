@@ -97,6 +97,23 @@ struct ScriptEditorView: View {
                 .padding(8)
                 .frame(minHeight: 200)
                 .focused($isEditorFocused)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(SectionMarker.allCases, id: \.self) { marker in
+                                    markerChip(for: marker)
+                                }
+                            }
+                        }
+
+                        Spacer()
+
+                        Button("Done") {
+                            isEditorFocused = false
+                        }
+                    }
+                }
         }
         .background(Theme.surfaceElevated)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -104,19 +121,6 @@ struct ScriptEditorView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Theme.border)
         )
-        .overlay(alignment: .topTrailing) {
-            Button {
-                isEditorFocused = false
-            } label: {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(Theme.accent)
-                    .padding(8)
-            }
-            .buttonStyle(.plain)
-            .opacity(isEditorFocused ? 1 : 0)
-            .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
-        }
     }
 
     private var statsBar: some View {
@@ -145,6 +149,25 @@ struct ScriptEditorView: View {
             .split(whereSeparator: { $0.isWhitespace })
             .filter { !$0.isEmpty }
             .count
+    }
+
+    private func markerChip(for marker: SectionMarker) -> some View {
+        Button {
+            post.script += "\n\(marker.token)\n"
+        } label: {
+            HStack(spacing: 4) {
+                Text(marker.emoji)
+                Text(marker.displayName)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Theme.accent.opacity(0.15))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Insert \(marker.displayName) marker")
     }
 
     // MARK: - Locked state
