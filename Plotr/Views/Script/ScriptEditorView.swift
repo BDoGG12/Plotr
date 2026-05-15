@@ -7,6 +7,7 @@ struct ScriptEditorView: View {
 
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall: Bool = false
+    @State private var showFullScreen: Bool = false
     @State private var savedIndicator: Bool = false
     @State private var savedResetTask: Task<Void, Never>?
     @FocusState private var isEditorFocused: Bool
@@ -26,6 +27,10 @@ struct ScriptEditorView: View {
             )
             .presentationDetents([.large])
         }
+        .sheet(isPresented: $showFullScreen) {
+            FullScreenScriptPlaceholder()
+                .presentationDetents([.large])
+        }
         .onChange(of: post.script) {
             savedIndicator = true
 
@@ -44,8 +49,25 @@ struct ScriptEditorView: View {
 
     private var proEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
+            editorHeader
             editorField
             statsBar
+        }
+    }
+
+    private var editorHeader: some View {
+        HStack {
+            Spacer()
+            Button {
+                showFullScreen = true
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.callout.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(6)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Full screen script editor")
         }
     }
 
@@ -145,6 +167,18 @@ struct ScriptEditorView: View {
         }
         .frame(maxWidth: .infinity)
         .cardSurface(padding: 20)
+    }
+}
+
+// Placeholder until `FullScreenScriptView` lands in PLOT-68.
+private struct FullScreenScriptPlaceholder: View {
+    var body: some View {
+        ZStack {
+            Theme.background.ignoresSafeArea()
+            Text("Full Screen Coming Soon")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+        }
     }
 }
 
