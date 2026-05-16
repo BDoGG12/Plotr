@@ -133,6 +133,40 @@ final class Post {
         !script.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Whitespace-delimited word count of `script`. Returns `0` for an empty
+    /// or whitespace-only script.
+    var wordCount: Int {
+        guard !script.isEmpty else { return 0 }
+        return script
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .count
+    }
+
+    /// Reading-time estimate based on a 130 wpm pace, rounded to the nearest
+    /// half-minute. Returns `""` when there's nothing to read.
+    /// Format:
+    ///   - `< 0.5` rounded result → `"< 1 min"`
+    ///   - exactly `1.0` → `"~1 min"` (singular)
+    ///   - whole minutes (≥ 2) → `"~N mins"` (e.g. `"~2 mins"`)
+    ///   - half-minute fractions → `"~N.5 mins"` (e.g. `"~2.5 mins"`)
+    var estimatedReadTime: String {
+        guard wordCount > 0 else { return "" }
+
+        let minutes = Double(wordCount) / 130.0
+        let rounded = (minutes * 2).rounded() / 2
+
+        if rounded < 1.0 {
+            return "< 1 min"
+        } else if rounded == 1.0 {
+            return "~1 min"
+        } else if rounded.truncatingRemainder(dividingBy: 1) == 0 {
+            return "~\(Int(rounded)) mins"
+        } else {
+            return "~\(rounded) mins"
+        }
+    }
+
     /// Replaces every `SectionMarker` token in the script with a human-readable
     /// label of the form `"--- 🎣 Hook ---"`. Tokens that aren't present are
     /// left untouched; non-marker text passes through unchanged.
