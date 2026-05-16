@@ -77,6 +77,7 @@ struct FullScreenScriptView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .focused($isEditorFocused)
+                .opacity(showRendered ? 0 : 1)
                 .toolbar {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
@@ -85,8 +86,69 @@ struct FullScreenScriptView: View {
                         }
                     }
                 }
+
+            ScrollView {
+                renderScript(post.script)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .opacity(showRendered ? 1 : 0)
+            .allowsHitTesting(showRendered)
+            .onTapGesture {
+                isEditorFocused = true
+            }
         }
         .frame(maxHeight: .infinity)
+        .animation(.easeInOut(duration: 0.2), value: isEditorFocused)
+    }
+
+    private var showRendered: Bool {
+        !isEditorFocused && !post.script.isEmpty
+    }
+
+    private func renderScript(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            let lines = text.components(separatedBy: "\n")
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                renderedLine(line)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func renderedLine(_ line: String) -> some View {
+        if let marker = SectionMarker.allCases.first(where: { $0.token == line }) {
+            markerDivider(for: marker)
+        } else {
+            Text(line.isEmpty ? " " : line)
+                .font(.system(size: 18))
+                .foregroundStyle(Theme.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func markerDivider(for marker: SectionMarker) -> some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 1)
+
+            HStack(spacing: 4) {
+                Text(marker.emoji)
+                Text(marker.displayName)
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+
+            Rectangle()
+                .fill(Theme.border)
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Theme.accent.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
     private var bottomBar: some View {
