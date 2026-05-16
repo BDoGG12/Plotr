@@ -202,13 +202,10 @@ struct PostDetailView: View {
                         .foregroundStyle(Theme.textPrimary)
                     Spacer()
                     if post.hasScript {
-                        Text("\(scriptWordCount) words")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(Theme.accent)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Theme.accent.opacity(0.15))
-                            .clipShape(Capsule())
+                        scriptHeaderBadge("\(scriptWordCount) words")
+                        if !post.estimatedReadTime.isEmpty {
+                            scriptHeaderBadge(post.estimatedReadTime)
+                        }
                     }
                 }
 
@@ -223,6 +220,16 @@ struct PostDetailView: View {
             .split(whereSeparator: { $0.isWhitespace })
             .filter { !$0.isEmpty }
             .count
+    }
+
+    private func scriptHeaderBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Theme.accent.opacity(0.15))
+            .clipShape(Capsule())
     }
 
     @ViewBuilder
