@@ -1,5 +1,34 @@
 import SwiftUI
 import SwiftData
+import UIKit
+
+enum TeleprompterSpeed: Hashable, CaseIterable {
+    case slow
+    case medium
+    case fast
+
+    /// Scroll velocity in points per second.
+    var pixelsPerSecond: CGFloat {
+        switch self {
+        case .slow:   return 40
+        case .medium: return 70
+        case .fast:   return 110
+        }
+    }
+
+    /// Pixels advanced per timer tick. Timer fires every 0.05s → 20 ticks/sec.
+    var pixelsPerTick: CGFloat {
+        pixelsPerSecond / 20.0
+    }
+
+    var label: String {
+        switch self {
+        case .slow:   return "Slow"
+        case .medium: return "Medium"
+        case .fast:   return "Fast"
+        }
+    }
+}
 
 struct TeleprompterView: View {
     @Bindable var post: Post
@@ -7,6 +36,8 @@ struct TeleprompterView: View {
 
     @State private var isScrolling: Bool = false
     @State private var timer: Timer? = nil
+    @State private var selectedSpeed: TeleprompterSpeed = .medium
+    @State private var scrollOffset: CGFloat = 0
 
     private let gold = Color(hex: "c9a84c")
     private let rule = Color.white.opacity(0.2)
@@ -18,13 +49,14 @@ struct TeleprompterView: View {
             VStack(spacing: 0) {
                 topBar
                 scriptScroll
-                bottomControls
+                speedSelector
             }
         }
         .onAppear {
-            // Auto-start when the view appears. PLOT-78 will wire this
-            // to a play/pause control in the bottom bar.
+            // Auto-start when the view appears. Future stories may wire this
+            // to a play/pause control.
             isScrolling = true
+            startTimer()
         }
         .onDisappear {
             timer?.invalidate()
@@ -56,28 +88,16 @@ struct TeleprompterView: View {
     }
 
     private var scriptScroll: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 8) {
-                    let lines = post.script.components(separatedBy: "\n")
-                    ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                        renderedLine(line)
-                    }
-
-                    // Auto-scroll target — invisible, sits at the bottom of
-                    // the script content. PLOT-78 will replace the
-                    // jump-to-bottom strategy with a pixel-by-pixel offset.
-                    Color.clear
-                        .frame(height: 1)
-                        .id("bottom")
+        TeleprompterScrollView(scrollOffset: $scrollOffset) {
+            VStack(alignment: .leading, spacing: 8) {
+                let lines = post.script.components(separatedBy: "\n")
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    renderedLine(line)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .onAppear {
-                startAutoScroll(proxy: proxy)
-            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxHeight: .infinity)
     }
@@ -115,31 +135,104 @@ struct TeleprompterView: View {
         .padding(.vertical, 10)
     }
 
-    /// Placeholder bottom controls — PLOT-78 (auto-scroll controls) and
-    /// PLOT-79 (font / speed / mirror options) will populate this bar.
-    private var bottomControls: some View {
-        HStack {
-            // Future: play/pause, speed slider, font size, mirror toggle.
+    private var speedSelector: some View {
+        HStack(spacing: 12) {
+            ForEach(TeleprompterSpeed.allCases, id: \.self) { speed in
+                speedChip(for: speed)
+            }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 64)
-        .background(Color.white.opacity(0.04))
+        .padding(.vertical, 16)
+        .background(Color.black.opacity(0.6))
+    }
+
+    private func speedChip(for speed: TeleprompterSpeed) -> some View {
+        let isSelected = selectedSpeed == speed
+        return Button {
+            selectedSpeed = speed
+        } label: {
+            Text(speed.label)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .foregroundStyle(isSelected ? Theme.accent : Color.white.opacity(0.5))
+                .background(isSelected ? Theme.accent.opacity(0.18) : Color.clear)
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(isSelected ? Theme.accent : Color.white.opacity(0.2), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(speed.label) scroll speed")
     }
 
     // MARK: - Auto-scroll
 
-    private func startAutoScroll(proxy: ScrollViewProxy) {
+    private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             guard isScrolling else { return }
-            // Placeholder scroll behaviour: animate to the bottom anchor on
-            // every tick. PLOT-78 will replace this with a per-tick offset
-            // so the scroll feels like an actual teleprompter rather than a
-            // jump-to-end.
-            withAnimation(.linear(duration: 0.05)) {
-                proxy.scrollTo("bottom", anchor: .bottom)
-            }
+            scrollOffset += selectedSpeed.pixelsPerTick
         }
+    }
+}
+
+// MARK: - UIScrollView bridge
+//
+// Wraps a `UIScrollView` that hosts the SwiftUI script content. The parent
+// drives the scroll position through `scrollOffset`; on every binding change
+// we set `contentOffset.y` to the new value. This gives the timer fine-grained
+// pixel-level control over scroll position — the SwiftUI `ScrollViewReader`
+// approach can only jump to anchors, not step pixel-by-pixel.
+
+private struct TeleprompterScrollView<Content: View>: UIViewRepresentable {
+    @Binding var scrollOffset: CGFloat
+    let content: Content
+
+    init(scrollOffset: Binding<CGFloat>, @ViewBuilder content: () -> Content) {
+        self._scrollOffset = scrollOffset
+        self.content = content()
+    }
+
+    func makeUIView(context: Context) -> UIScrollView {
+        let scrollView = UIScrollView()
+        scrollView.backgroundColor = .black
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.alwaysBounceVertical = false
+        scrollView.contentInsetAdjustmentBehavior = .never
+
+        let host = UIHostingController(rootView: content)
+        host.view.backgroundColor = .clear
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(host.view)
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            host.view.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            host.view.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            host.view.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+        ])
+
+        context.coordinator.hostingController = host
+        return scrollView
+    }
+
+    func updateUIView(_ scrollView: UIScrollView, context: Context) {
+        context.coordinator.hostingController?.rootView = content
+
+        let target = CGPoint(x: 0, y: scrollOffset)
+        if abs(scrollView.contentOffset.y - target.y) > 0.5 {
+            scrollView.setContentOffset(target, animated: false)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator {
+        var hostingController: UIHostingController<Content>?
     }
 }
 
