@@ -153,7 +153,7 @@ struct FullScreenScriptView: View {
 
     private var bottomBar: some View {
         HStack(spacing: 8) {
-            Text("\(wordCount) words · \(post.script.count) characters")
+            Text(statsLabel)
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
 
@@ -179,6 +179,12 @@ struct FullScreenScriptView: View {
             .split(whereSeparator: { $0.isWhitespace })
             .filter { !$0.isEmpty }
             .count
+    }
+
+    private var statsLabel: String {
+        let base = "\(wordCount) words · \(post.script.count) characters"
+        let readTime = post.estimatedReadTime
+        return readTime.isEmpty ? base : "\(base) · \(readTime)"
     }
 }
 

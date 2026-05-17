@@ -185,7 +185,7 @@ struct ScriptEditorView: View {
 
     private var statsBar: some View {
         HStack(spacing: 8) {
-            Text("\(wordCount) words · \(post.script.count) characters")
+            Text(statsLabel)
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
 
@@ -209,6 +209,12 @@ struct ScriptEditorView: View {
             .split(whereSeparator: { $0.isWhitespace })
             .filter { !$0.isEmpty }
             .count
+    }
+
+    private var statsLabel: String {
+        let base = "\(wordCount) words · \(post.script.count) characters"
+        let readTime = post.estimatedReadTime
+        return readTime.isEmpty ? base : "\(base) · \(readTime)"
     }
 
     private func markerChip(for marker: SectionMarker) -> some View {
