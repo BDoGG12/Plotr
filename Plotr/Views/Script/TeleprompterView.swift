@@ -38,6 +38,12 @@ struct TeleprompterView: View {
     @State private var timer: Timer? = nil
     @State private var selectedSpeed: TeleprompterSpeed = .medium
     @State private var scrollOffset: CGFloat = 0
+    @State private var fontSize: CGFloat = UserDefaults.standard
+        .object(forKey: "plotr_teleprompter_font_size") as? CGFloat ?? 28
+
+    private let fontSizeKey = "plotr_teleprompter_font_size"
+    private let minFontSize: CGFloat = 20
+    private let maxFontSize: CGFloat = 48
 
     private let gold = Color(hex: "c9a84c")
     private let rule = Color.white.opacity(0.2)
@@ -73,6 +79,7 @@ struct TeleprompterView: View {
                 .foregroundStyle(.white)
 
             HStack {
+                fontSizeStepper
                 Spacer()
                 Button(action: dismiss) {
                     Image(systemName: "xmark")
@@ -85,6 +92,31 @@ struct TeleprompterView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+    }
+
+    private var fontSizeStepper: some View {
+        HStack(spacing: 10) {
+            Button(action: decreaseFontSize) {
+                Image(systemName: "minus.circle")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Decrease font size")
+
+            Text("\(Int(fontSize))")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white)
+                .frame(minWidth: 22)
+
+            Button(action: increaseFontSize) {
+                Image(systemName: "plus.circle")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Increase font size")
+        }
     }
 
     private var scriptScroll: some View {
@@ -108,7 +140,7 @@ struct TeleprompterView: View {
             markerDivider(for: marker)
         } else {
             Text(line.isEmpty ? " " : line)
-                .font(.system(size: 24))
+                .font(.system(size: fontSize))
                 .foregroundStyle(.white)
                 .lineSpacing(8)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -238,6 +270,22 @@ struct TeleprompterView: View {
         withAnimation(.easeOut(duration: 0.4)) {
             scrollOffset = 0
         }
+    }
+
+    // MARK: - Font size
+
+    private func decreaseFontSize() {
+        let next = max(minFontSize, fontSize - 2)
+        guard next != fontSize else { return }
+        fontSize = next
+        UserDefaults.standard.set(fontSize, forKey: fontSizeKey)
+    }
+
+    private func increaseFontSize() {
+        let next = min(maxFontSize, fontSize + 2)
+        guard next != fontSize else { return }
+        fontSize = next
+        UserDefaults.standard.set(fontSize, forKey: fontSizeKey)
     }
 }
 
