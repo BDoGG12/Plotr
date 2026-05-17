@@ -49,7 +49,7 @@ struct TeleprompterView: View {
             VStack(spacing: 0) {
                 topBar
                 scriptScroll
-                speedSelector
+                bottomControls
             }
         }
         .onAppear {
@@ -135,15 +135,55 @@ struct TeleprompterView: View {
         .padding(.vertical, 10)
     }
 
-    private var speedSelector: some View {
+    private var bottomControls: some View {
         HStack(spacing: 12) {
+            resetButton
+            Spacer()
+            playPauseButton
+            Spacer()
+            speedSelector
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color.black.opacity(0.7))
+    }
+
+    private var resetButton: some View {
+        Button {
+            reset()
+        } label: {
+            Image(systemName: "arrow.counterclockwise")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(0.15))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Reset teleprompter")
+    }
+
+    private var playPauseButton: some View {
+        Button {
+            togglePlayPause()
+        } label: {
+            Image(systemName: isScrolling ? "pause.fill" : "play.fill")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.black)
+                .frame(width: 60, height: 60)
+                .background(gold)
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isScrolling ? "Pause auto-scroll" : "Play auto-scroll")
+    }
+
+    private var speedSelector: some View {
+        HStack(spacing: 8) {
             ForEach(TeleprompterSpeed.allCases, id: \.self) { speed in
                 speedChip(for: speed)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.black.opacity(0.6))
     }
 
     private func speedChip(for speed: TeleprompterSpeed) -> some View {
@@ -174,6 +214,29 @@ struct TeleprompterView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
             guard isScrolling else { return }
             scrollOffset += selectedSpeed.pixelsPerTick
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func togglePlayPause() {
+        if isScrolling {
+            isScrolling = false
+            stopTimer()
+        } else {
+            isScrolling = true
+            startTimer()
+        }
+    }
+
+    private func reset() {
+        isScrolling = false
+        stopTimer()
+        withAnimation(.easeOut(duration: 0.4)) {
+            scrollOffset = 0
         }
     }
 }
@@ -222,9 +285,15 @@ private struct TeleprompterScrollView<Content: View>: UIViewRepresentable {
         context.coordinator.hostingController?.rootView = content
 
         let target = CGPoint(x: 0, y: scrollOffset)
-        if abs(scrollView.contentOffset.y - target.y) > 0.5 {
-            scrollView.setContentOffset(target, animated: false)
-        }
+        let delta = abs(scrollView.contentOffset.y - target.y)
+        guard delta > 0.5 else { return }
+
+        // Per-tick teleprompter advances move only a few pixels, so we want
+        // those to apply immediately without iOS's built-in scroll animation.
+        // A larger jump (e.g. reset to zero) should animate so the user sees
+        // the scroll travel back up instead of snapping.
+        let isLargeJump = delta > 20
+        scrollView.setContentOffset(target, animated: isLargeJump)
     }
 
     func makeCoordinator() -> Coordinator {
