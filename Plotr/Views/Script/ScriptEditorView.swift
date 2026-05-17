@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ScriptEditorView: View {
     @Bindable var post: Post
@@ -8,6 +9,7 @@ struct ScriptEditorView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall: Bool = false
     @State private var showFullScreen: Bool = false
+    @State private var showTeleprompter: Bool = false
     @State private var savedIndicator: Bool = false
     @State private var savedResetTask: Task<Void, Never>?
     @FocusState private var isEditorFocused: Bool
@@ -36,6 +38,18 @@ struct ScriptEditorView: View {
             .presentationDragIndicator(.hidden)
             .interactiveDismissDisabled(false)
         }
+        .fullScreenCover(isPresented: $showTeleprompter) {
+            TeleprompterView(
+                post: post,
+                dismiss: { showTeleprompter = false }
+            )
+        }
+        .onChange(of: showTeleprompter) { _, isPresenting in
+            // Keep the screen awake while the teleprompter is on screen so
+            // the device doesn't auto-lock during a long take, and restore
+            // the default idle behaviour when it goes away.
+            UIApplication.shared.isIdleTimerDisabled = isPresenting
+        }
         .onChange(of: post.script) {
             savedIndicator = true
 
@@ -61,8 +75,22 @@ struct ScriptEditorView: View {
     }
 
     private var editorHeader: some View {
-        HStack {
+        HStack(spacing: 8) {
             Spacer()
+
+            if post.hasScript {
+                Button {
+                    openTeleprompter()
+                } label: {
+                    Image(systemName: "play.rectangle")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(6)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open teleprompter")
+            }
+
             Button {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     showFullScreen = true
@@ -75,6 +103,14 @@ struct ScriptEditorView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Full screen script editor")
+        }
+    }
+
+    private func openTeleprompter() {
+        if subscriptionManager.isPro {
+            showTeleprompter = true
+        } else {
+            showPaywall = true
         }
     }
 
