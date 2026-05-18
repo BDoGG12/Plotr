@@ -8,6 +8,9 @@ struct ScriptEditorView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall: Bool = false
     @State private var showFullScreen: Bool = false
+    @State private var showShareSheet: Bool = false
+    @State private var pdfData: Data? = nil
+    @State private var showExportError: Bool = false
     @State private var savedIndicator: Bool = false
     @State private var savedResetTask: Task<Void, Never>?
     @FocusState private var isEditorFocused: Bool
@@ -36,6 +39,16 @@ struct ScriptEditorView: View {
             .presentationDragIndicator(.hidden)
             .interactiveDismissDisabled(false)
         }
+        .sheet(isPresented: $showShareSheet) {
+            if let url = pdfShareURL() {
+                ShareSheet(items: [url])
+            }
+        }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Unable to generate PDF. Please try again.")
+        }
         .onChange(of: post.script) {
             savedIndicator = true
 
@@ -61,8 +74,22 @@ struct ScriptEditorView: View {
     }
 
     private var editorHeader: some View {
-        HStack {
+        HStack(spacing: 8) {
             Spacer()
+
+            if post.hasScript {
+                Button {
+                    exportPDF()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(6)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Export script as PDF")
+            }
+
             Button {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     showFullScreen = true
@@ -75,6 +102,34 @@ struct ScriptEditorView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Full screen script editor")
+        }
+    }
+
+    private func exportPDF() {
+        guard let data = PDFExporter.export(post: post) else {
+            showExportError = true
+            return
+        }
+        pdfData = data
+        showShareSheet = true
+    }
+
+    /// Writes the in-memory PDF data to a temp file named via
+    /// `PDFExporter.sanitisedFilename(for:)` and returns its URL. Returning a
+    /// URL (rather than the raw `Data`) lets `UIActivityViewController` show
+    /// the proper filename in the share sheet and in destination apps.
+    private func pdfShareURL() -> URL? {
+        guard let data = pdfData else { return nil }
+        let filename = PDFExporter.sanitisedFilename(for: post)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        do {
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
         }
     }
 
@@ -264,6 +319,16 @@ struct ScriptEditorView: View {
         .frame(maxWidth: .infinity)
         .cardSurface(padding: 20)
     }
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview("Pro user") {
