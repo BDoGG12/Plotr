@@ -18,10 +18,18 @@ struct ScriptEditorView: View {
 
     var body: some View {
         Group {
-            if subscriptionManager.isPro {
-                proEditor
-            } else {
-                lockedState
+            VStack(alignment: .leading, spacing: 10) {
+                // Header stays visible for non-Pro users so they can see the
+                // Pro-badged export button and learn what's gated. The actual
+                // editor surface swaps to `lockedState` when they aren't Pro.
+                editorHeader
+
+                if subscriptionManager.isPro {
+                    editorField
+                    statsBar
+                } else {
+                    lockedState
+                }
             }
         }
         .sheet(isPresented: $showPaywall) {
@@ -64,21 +72,15 @@ struct ScriptEditorView: View {
         }
     }
 
-    // MARK: - Pro editor
-
-    private var proEditor: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            editorHeader
-            editorField
-            statsBar
-        }
-    }
+    // MARK: - Editor
 
     private var editorHeader: some View {
         HStack(spacing: 8) {
             Spacer()
 
-            if post.hasScript {
+            // Show for Pro users only when there's a script to export. Show
+            // for non-Pro users regardless so they see the ProBadge upsell.
+            if post.hasScript || !subscriptionManager.isPro {
                 Button {
                     exportPDF()
                 } label: {
@@ -97,6 +99,13 @@ struct ScriptEditorView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isExporting)
+                .overlay(alignment: .topTrailing) {
+                    if !subscriptionManager.isPro {
+                        ProBadge()
+                            .offset(x: 8, y: -8)
+                            .allowsHitTesting(false)
+                    }
+                }
                 .accessibilityLabel(isExporting ? "Exporting PDF" : "Export script as PDF")
             }
 
@@ -116,6 +125,11 @@ struct ScriptEditorView: View {
     }
 
     private func exportPDF() {
+        guard subscriptionManager.isPro else {
+            showPaywall = true
+            return
+        }
+
         Task(priority: .userInitiated) {
             await MainActor.run { isExporting = true }
             let data = await Task.detached(priority: .userInitiated) {
