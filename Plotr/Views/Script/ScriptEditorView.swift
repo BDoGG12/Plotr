@@ -11,6 +11,7 @@ struct ScriptEditorView: View {
     @State private var showShareSheet: Bool = false
     @State private var pdfData: Data? = nil
     @State private var showExportError: Bool = false
+    @State private var isExporting: Bool = false
     @State private var savedIndicator: Bool = false
     @State private var savedResetTask: Task<Void, Never>?
     @FocusState private var isEditorFocused: Bool
@@ -81,13 +82,22 @@ struct ScriptEditorView: View {
                 Button {
                     exportPDF()
                 } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.callout.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
-                        .padding(6)
+                    Group {
+                        if isExporting {
+                            ProgressView()
+                                .tint(Theme.accent)
+                        } else {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.callout.weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                        }
+                    }
+                    .frame(width: 22, height: 22)
+                    .padding(6)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Export script as PDF")
+                .disabled(isExporting)
+                .accessibilityLabel(isExporting ? "Exporting PDF" : "Export script as PDF")
             }
 
             Button {
@@ -106,12 +116,21 @@ struct ScriptEditorView: View {
     }
 
     private func exportPDF() {
-        guard let data = PDFExporter.export(post: post) else {
-            showExportError = true
-            return
+        Task(priority: .userInitiated) {
+            await MainActor.run { isExporting = true }
+            let data = await Task.detached(priority: .userInitiated) {
+                PDFExporter.export(post: post)
+            }.value
+            await MainActor.run {
+                isExporting = false
+                if let data {
+                    pdfData = data
+                    showShareSheet = true
+                } else {
+                    showExportError = true
+                }
+            }
         }
-        pdfData = data
-        showShareSheet = true
     }
 
     /// Writes the in-memory PDF data to a temp file named via
