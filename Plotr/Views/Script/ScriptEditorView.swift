@@ -88,73 +88,89 @@ struct ScriptEditorView: View {
     // MARK: - Editor
 
     private var editorHeader: some View {
-        HStack(spacing: 8) {
-            Spacer()
+        VStack(alignment: .leading, spacing: 8) {
+            // Row 1 — title + action buttons
+            HStack(spacing: 8) {
+                Label("Script", systemImage: "pencil.and.outline")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
 
-            // Show for Pro users only when there's a script to export. Show
-            // for non-Pro users regardless so they see the ProBadge upsell.
-            if post.hasScript || !subscriptionManager.isPro {
-                Button {
-                    exportPDF()
-                } label: {
-                    Group {
-                        if isExporting {
-                            ProgressView()
-                                .tint(Theme.accent)
-                        } else {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.callout.weight(.semibold))
-                                .foregroundStyle(Theme.accent)
-                        }
-                    }
-                    .frame(width: 22, height: 22)
-                    .padding(6)
+                Spacer()
+
+                if post.hasScript {
+                    exportButton
+                    teleprompterButton
                 }
-                .buttonStyle(.plain)
-                .disabled(isExporting)
-                .overlay(alignment: .topTrailing) {
-                    if !subscriptionManager.isPro {
-                        ProBadge()
-                            .offset(x: 8, y: -8)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .accessibilityLabel(isExporting ? "Exporting PDF" : "Export script as PDF")
+                fullScreenButton
             }
 
+            // Row 2 — stats badges (only once there's a script)
             if post.hasScript {
-                Button {
-                    openTeleprompter()
-                } label: {
-                    Image(systemName: "play.rectangle.fill")
+                statsBadges
+            }
+        }
+    }
+
+    private var exportButton: some View {
+        Button {
+            exportPDF()
+        } label: {
+            Group {
+                if isExporting {
+                    ProgressView()
+                        .tint(Theme.accent)
+                } else {
+                    Image(systemName: "square.and.arrow.up")
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(Theme.accent)
-                        .padding(6)
                 }
-                .buttonStyle(.plain)
-                .overlay(alignment: .topTrailing) {
-                    if !subscriptionManager.isPro {
-                        ProBadge()
-                            .offset(x: 8, y: -8)
-                            .allowsHitTesting(false)
-                    }
-                }
-                .accessibilityLabel("Open teleprompter")
             }
-
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                    showFullScreen = true
-                }
-            } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                    .padding(6)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Full screen script editor")
+            .frame(width: 22, height: 22)
+            .padding(6)
         }
+        .buttonStyle(.plain)
+        .disabled(isExporting)
+        .accessibilityLabel(isExporting ? "Exporting PDF" : "Export script as PDF")
+    }
+
+    private var teleprompterButton: some View {
+        Button {
+            openTeleprompter()
+        } label: {
+            Image(systemName: "play.rectangle.fill")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Open teleprompter")
+    }
+
+    private var fullScreenButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                showFullScreen = true
+            }
+        } label: {
+            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .padding(6)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Full screen script editor")
+    }
+
+    private var statsBadges: some View {
+        HStack(spacing: 6) {
+            Text("\(wordCount) words")
+            if !post.estimatedReadTime.isEmpty {
+                Text("·")
+                Text(post.estimatedReadTime)
+            }
+        }
+        .font(.caption2)
+        .foregroundStyle(Theme.textSecondary)
     }
 
     private func openTeleprompter() {

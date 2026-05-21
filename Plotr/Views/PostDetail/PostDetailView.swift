@@ -195,41 +195,11 @@ struct PostDetailView: View {
     @ViewBuilder
     private var scriptSection: some View {
         if post.stage == .script || post.stage == .filming || post.stage == .editing {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Label("Script", systemImage: "pencil.and.outline")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                    Spacer()
-                    if post.hasScript {
-                        scriptHeaderBadge("\(scriptWordCount) words")
-                        if !post.estimatedReadTime.isEmpty {
-                            scriptHeaderBadge(post.estimatedReadTime)
-                        }
-                    }
-                }
-
-                ScriptEditorView(post: post, postCount: allPosts.count)
-            }
-            .cardSurface(padding: 16)
+            // ScriptEditorView owns its own header (title, action buttons,
+            // stats badges) — this section is just the card wrapper.
+            ScriptEditorView(post: post, postCount: allPosts.count)
+                .cardSurface(padding: 16)
         }
-    }
-
-    private var scriptWordCount: Int {
-        post.script
-            .split(whereSeparator: { $0.isWhitespace })
-            .filter { !$0.isEmpty }
-            .count
-    }
-
-    private func scriptHeaderBadge(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(Theme.accent)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(Theme.accent.opacity(0.15))
-            .clipShape(Capsule())
     }
 
     @ViewBuilder
