@@ -67,6 +67,14 @@ struct PlotrApp: App {
                 .task {
                     await subscriptionManager.setup()
                 }
+                .task {
+                    // Request notification permission once, on first launch only.
+                    let key = "plotr_notification_permission_requested"
+                    if !UserDefaults.standard.bool(forKey: key) {
+                        _ = await NotificationManager.requestPermission()
+                        UserDefaults.standard.set(true, forKey: key)
+                    }
+                }
                 .onReceive(
                     NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
                 ) { _ in
