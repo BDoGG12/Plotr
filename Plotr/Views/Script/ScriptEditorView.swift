@@ -8,6 +8,7 @@ struct ScriptEditorView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showPaywall: Bool = false
     @State private var showFullScreen: Bool = false
+    @State private var showTeleprompter: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var pdfData: Data? = nil
     @State private var showExportError: Bool = false
@@ -47,6 +48,18 @@ struct ScriptEditorView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.hidden)
             .interactiveDismissDisabled(false)
+        }
+        .fullScreenCover(isPresented: $showTeleprompter) {
+            TeleprompterView(
+                post: post,
+                dismiss: { showTeleprompter = false }
+            )
+        }
+        .onChange(of: showTeleprompter) { _, isPresenting in
+            // Keep the screen awake while the teleprompter is on screen so
+            // the device doesn't auto-lock mid-take; restore default idle
+            // behaviour when it's dismissed.
+            UIApplication.shared.isIdleTimerDisabled = isPresenting
         }
         .sheet(isPresented: $showShareSheet) {
             if let url = pdfShareURL() {
@@ -109,6 +122,26 @@ struct ScriptEditorView: View {
                 .accessibilityLabel(isExporting ? "Exporting PDF" : "Export script as PDF")
             }
 
+            if post.hasScript {
+                Button {
+                    openTeleprompter()
+                } label: {
+                    Image(systemName: "play.rectangle.fill")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .padding(6)
+                }
+                .buttonStyle(.plain)
+                .overlay(alignment: .topTrailing) {
+                    if !subscriptionManager.isPro {
+                        ProBadge()
+                            .offset(x: 8, y: -8)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .accessibilityLabel("Open teleprompter")
+            }
+
             Button {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
                     showFullScreen = true
@@ -121,6 +154,14 @@ struct ScriptEditorView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Full screen script editor")
+        }
+    }
+
+    private func openTeleprompter() {
+        if subscriptionManager.isPro {
+            showTeleprompter = true
+        } else {
+            showPaywall = true
         }
     }
 
