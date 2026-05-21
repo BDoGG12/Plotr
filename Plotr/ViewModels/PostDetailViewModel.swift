@@ -18,10 +18,16 @@ final class PostDetailViewModel {
 
     func dueDateToggled(_ newValue: Bool, post: Post) {
         post.dueDate = newValue ? dueDateValue : nil
+        if newValue {
+            Task { await NotificationManager.scheduleNotifications(for: post) }
+        }
     }
 
     func dueDateChanged(_ newValue: Date, post: Post) {
-        if hasDueDate { post.dueDate = newValue }
+        if hasDueDate {
+            post.dueDate = newValue
+            Task { await NotificationManager.scheduleNotifications(for: post) }
+        }
     }
 
     func togglePlatform(_ platform: Platform, post: Post, context: ModelContext) {
