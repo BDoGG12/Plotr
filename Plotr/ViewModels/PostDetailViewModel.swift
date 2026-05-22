@@ -20,6 +20,8 @@ final class PostDetailViewModel {
         post.dueDate = newValue ? dueDateValue : nil
         if newValue {
             Task { await NotificationManager.scheduleNotifications(for: post) }
+        } else {
+            NotificationManager.cancelNotifications(for: post)
         }
     }
 
@@ -48,6 +50,9 @@ final class PostDetailViewModel {
     }
 
     func delete(_ post: Post, context: ModelContext) {
+        // Cancel reminders while `post` is still valid — its id is needed to
+        // build the notification identifiers.
+        NotificationManager.cancelNotifications(for: post)
         context.delete(post)
     }
 

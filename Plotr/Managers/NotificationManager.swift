@@ -83,6 +83,13 @@ final class NotificationManager {
         }
     }
 
+    /// Cancels every pending due-date reminder for a post. Safe to call when
+    /// no reminders are scheduled — unmatched identifiers are simply ignored.
+    static func cancelNotifications(for post: Post) {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: notificationIdentifiers(for: post))
+    }
+
     /// The three due-date reminders: how far each fires from the due date (in
     /// days), the identifier suffix, and the notification body.
     private static let reminderDescriptors: [(dayOffset: Int, suffix: String, body: String)] = [
