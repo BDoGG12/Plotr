@@ -2,8 +2,12 @@ import SwiftUI
 import SwiftData
 
 struct IdeaVaultView: View {
+    @Environment(\.modelContext) private var context
     @Query(sort: \Post.createdAt, order: .reverse) private var posts: [Post]
     @State private var viewModel = IdeaVaultViewModel()
+    @State private var showNewIdea = false
+    @State private var newIdea: Post?
+    @State private var didSaveIdea = false
 
     var body: some View {
         NavigationStack {
@@ -29,6 +33,14 @@ struct IdeaVaultView: View {
                 }
             }
             .navigationTitle("Ideas")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New Idea", systemImage: "plus") {
+                        createNewIdea()
+                    }
+                    .tint(Theme.accent)
+                }
+            }
             .toolbarBackground(Theme.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .searchable(text: $viewModel.search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ideas")
@@ -37,7 +49,54 @@ struct IdeaVaultView: View {
                     PostDetailView(post: post)
                 }
             }
+            .sheet(isPresented: $showNewIdea, onDismiss: finishNewIdea) {
+                if let newIdea {
+                    NavigationStack {
+                        PostDetailView(post: newIdea)
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button("Cancel") {
+                                        showNewIdea = false
+                                    }
+                                }
+                                ToolbarItem(placement: .topBarTrailing) {
+                                    Button("Save") {
+                                        saveNewIdea()
+                                    }
+                                    .fontWeight(.semibold)
+                                }
+                            }
+                    }
+                }
+            }
         }
+    }
+
+    /// Creates a fresh idea-stage post, inserts it, and opens it for editing.
+    private func createNewIdea() {
+        let idea = Post(stage: .idea)
+        context.insert(idea)
+        newIdea = idea
+        didSaveIdea = false
+        showNewIdea = true
+    }
+
+    /// Commits the draft to SwiftData and closes the sheet. The `didSaveIdea`
+    /// flag tells `finishNewIdea` to keep the post rather than discard it.
+    private func saveNewIdea() {
+        didSaveIdea = true
+        try? context.save()
+        showNewIdea = false
+    }
+
+    /// Runs when the sheet closes. A saved draft is kept; a cancelled or
+    /// swiped-away draft is discarded so abandoned posts don't pile up.
+    private func finishNewIdea() {
+        if let newIdea, !didSaveIdea {
+            context.delete(newIdea)
+        }
+        newIdea = nil
+        didSaveIdea = false
     }
 
     private var emptyState: some View {
