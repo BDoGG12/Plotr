@@ -96,15 +96,17 @@ private struct BoardColumn: View {
                 if showProBadge {
                     ProBadge()
                 }
-                Button(action: onAdd) {
-                    Image(systemName: "plus")
-                        .font(.callout.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
-                        .frame(width: 26, height: 26)
-                        .background(Theme.surfaceElevated)
-                        .clipShape(Circle())
+                if stage != .done {
+                    Button(action: onAdd) {
+                        Image(systemName: "plus")
+                            .font(.callout.weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                            .frame(width: 26, height: 26)
+                            .background(Theme.surfaceElevated)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
