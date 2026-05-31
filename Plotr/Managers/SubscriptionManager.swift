@@ -1,6 +1,4 @@
 import Foundation
-import RevenueCat
-import StoreKit
 
 enum SubscriptionStatus {
     case trial
@@ -17,6 +15,16 @@ final class SubscriptionManager {
     private var previousStatus: SubscriptionStatus?
     private var hasLoadedOnce: Bool = false
     private let remindLaterKey = "plotr_remind_later_date"
+    private let customerInfoProvider: CustomerInfoProviding
+    private let appTransactionProvider: AppTransactionProviding
+
+    init(
+        customerInfoProvider: CustomerInfoProviding = LivePurchasesProvider(),
+        appTransactionProvider: AppTransactionProviding = LiveAppTransactionProvider()
+    ) {
+        self.customerInfoProvider = customerInfoProvider
+        self.appTransactionProvider = appTransactionProvider
+    }
 
     var isPro: Bool {
         status == .trial || status == .pro
@@ -24,13 +32,11 @@ final class SubscriptionManager {
 
     func refreshStatus() async {
         do {
-            let customerInfo = try await Purchases.shared.customerInfo()
-            let proEntitlement = customerInfo.entitlements["pro"]
-
-            if let proEntitlement, proEntitlement.isActive {
-                status = proEntitlement.periodType == .trial ? .trial : .pro
-            } else {
-                status = .expired
+            let state = try await customerInfoProvider.entitlementState()
+            switch state {
+            case .noActiveEntitlement: status = .expired
+            case .activeInTrial:       status = .trial
+            case .activeInPro:         status = .pro
             }
         } catch {
             status = .expired
@@ -92,20 +98,7 @@ final class SubscriptionManager {
         isLoading = false
     }
 
-    /// Returns `true` when StoreKit 2 has no verified `AppTransaction` on file
-    /// for this app — i.e. this is a fresh install that has never made any
-    /// purchase (including starting a trial). Returns `false` only for a
-    /// `.verified` result; an `.unverified` result is treated as a new install
-    /// since we can't trust it as proof of prior entitlement.
     private func isNewInstall() async -> Bool {
-        guard let result = try? await AppTransaction.shared else {
-            return true
-        }
-        switch result {
-        case .verified:
-            return false
-        case .unverified:
-            return true
-        }
+        !(await appTransactionProvider.hasVerifiedAppTransaction())
     }
 }
