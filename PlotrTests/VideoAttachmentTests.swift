@@ -8,9 +8,15 @@ struct VideoAttachmentTests {
     // MARK: - Initialiser and computed properties
 
     @Test func test_videoAttachment_initialisesCorrectly() {
-        let attachment = VideoAttachment(displayName: "clip.mp4", stage: .filming)
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let attachment = VideoAttachment(
+            displayName: "clip.mp4",
+            stage: .filming,
+            attachedAt: date
+        )
         #expect(attachment.displayName == "clip.mp4")
         #expect(attachment.stage == .filming)
+        #expect(attachment.attachedAt == date)
     }
 
     @Test func test_resolvedURL_returnsNil_whenBookmarkDataIsNil() {

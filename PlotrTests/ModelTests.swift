@@ -105,42 +105,4 @@ struct PostTests {
     }
 }
 
-@MainActor
-struct VideoAttachmentTests {
-    @Test func initStoresDisplayNameStageAndDate() {
-        let date = Date(timeIntervalSince1970: 1_700_000_000)
-        let attachment = VideoAttachment(
-            displayName: "clip.mov",
-            stage: .filming,
-            attachedAt: date
-        )
-
-        #expect(attachment.displayName == "clip.mov")
-        #expect(attachment.stageRaw == "Filming")
-        #expect(attachment.stage == .filming)
-        #expect(attachment.attachedAt == date)
-    }
-
-    @Test func resolvedURLIsNilWhenBookmarkDataIsNil() {
-        let attachment = VideoAttachment(bookmarkData: nil, displayName: "clip.mov")
-        #expect(attachment.resolvedURL == nil)
-    }
-
-    @Test func deletingPostCascadesToVideoAttachments() throws {
-        let context = try TestSupport.makeContext()
-        let post = TestSupport.insertPost(in: context)
-        let attachment = VideoAttachment(displayName: "clip.mov", stage: .filming)
-        context.insert(attachment)
-        attachment.post = post
-        post.videoAttachments.append(attachment)
-        try context.save()
-
-        #expect(try context.fetch(FetchDescriptor<VideoAttachment>()).count == 1)
-
-        context.delete(post)
-        try context.save()
-
-        let remainingAttachments = try context.fetch(FetchDescriptor<VideoAttachment>())
-        #expect(remainingAttachments.isEmpty)
-    }
-}
+// `VideoAttachmentTests` lives in PlotrTests/VideoAttachmentTests.swift.
