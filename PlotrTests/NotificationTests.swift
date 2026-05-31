@@ -1,144 +1,101 @@
 import Foundation
+import SwiftData
 import Testing
 import UserNotifications
 @testable import Plotr
 
-// MARK: - Notes on these tests
-//
-// `NotificationManager` talks directly to `UNUserNotificationCenter.current()`
-// with no injection seam, so it can't be unit-tested in isolation — the tests
-// below are integration tests against the real, process-wide notification
-// center. Two consequences shape the file:
-//
-//  * `scheduleNotifications(for:)` returns early at its authorization guard
-//    unless notifications are authorized. Each scheduling test first requests
-//    *provisional* authorization, which the system grants without a prompt.
-//    If the host can't grant it, the test records an issue rather than
-//    passing silently for the wrong reason.
-//  * The notification center is shared process-wide state, so the suite is
-//    `.serialized` and every test clears the center before and after.
-//
-// The robust fix — not possible without touching source — is to give
-// `NotificationManager` a notification-center protocol it can be injected
-// with, so a fake can be used in tests.
-
+/// Tests for `NotificationManager`'s due-date reminder behaviour and the
+/// `PostDetailViewModel` integration that drives it.
+///
+/// Both surfaces share `NotificationManager.current` as their entry point,
+/// so they live in one class-based suite. `init`/`deinit` swaps the static
+/// `current` to a manager backed by a `FakeNotificationCenter` for each
+/// test, and restores it afterwards — keeping the fake-injection contained
+/// and avoiding parallel-execution collisions across separate test files.
 @MainActor
-@Suite(.serialized)
-struct NotificationTests {
+final class NotificationTests {
+    private let fakeCenter: FakeNotificationCenter
+    private let previousManager: NotificationManager
 
-    private let center = UNUserNotificationCenter.current()
+    init() {
+        fakeCenter = FakeNotificationCenter()
+        fakeCenter.authorizationStatusToReturn = .authorized
+        previousManager = NotificationManager.current
+        NotificationManager.current = NotificationManager(center: fakeCenter)
+    }
 
-    /// One day, in seconds — used to build fixture due dates.
-    private let day: TimeInterval = 24 * 60 * 60
+    deinit {
+        NotificationManager.current = previousManager
+    }
 
     // MARK: - Helpers
 
-    /// Requests provisional authorization (granted without a user prompt) so
-    /// `scheduleNotifications` clears its permission guard.
-    /// - Returns: whether notifications are authorized for this run.
-    private func ensureAuthorization() async -> Bool {
-        _ = try? await center.requestAuthorization(options: [.provisional])
-        let status = await center.notificationSettings().authorizationStatus
-        return status == .authorized || status == .provisional
+    private func futureDate() -> Date {
+        .now.addingTimeInterval(10 * 24 * 60 * 60)
     }
 
-    /// Pending requests whose identifier belongs to the given post.
-    private func pendingRequests(for post: Post) async -> [UNNotificationRequest] {
-        await center.pendingNotificationRequests()
-            .filter { $0.identifier.hasPrefix(post.id.uuidString) }
+    /// Drains the view-model's fire-and-forget `Task { ... }` closures. The
+    /// fake's async methods don't touch real I/O, so a handful of yields
+    /// covers the chain of awaits inside `scheduleNotifications`.
+    private func settle() async {
+        for _ in 0..<20 { await Task.yield() }
     }
 
-    private func clearPending() {
-        center.removeAllPendingNotificationRequests()
+    private func request(matching suffix: String, for post: Post) -> UNNotificationRequest? {
+        fakeCenter.pending.first { $0.identifier == post.id.uuidString + suffix }
     }
 
-    // MARK: - Scheduling
+    // MARK: - NotificationManager: scheduling
 
     @Test func test_scheduleNotifications_schedulesThreeRequests() async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        // Far enough out that all three 9 AM fire times are in the future.
-        let post = Post(title: "Future post", dueDate: .now.addingTimeInterval(10 * day))
+        let post = Post(title: "Future post", dueDate: futureDate())
         await NotificationManager.scheduleNotifications(for: post)
 
-        let pending = await pendingRequests(for: post)
-        #expect(pending.count == 3)
+        #expect(fakeCenter.addCalls.count == 3)
+        #expect(fakeCenter.pending.count == 3)
     }
 
     @Test func test_scheduleNotifications_skipsIfNoDueDate() async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        // No due date — `scheduleNotifications` returns at its first guard.
-        // Authorization is granted above so 0 reflects the missing due date,
-        // not a denied-permission early-out.
-        let post = Post(title: "No due date")
+        let post = Post(title: "No due date")   // dueDate defaults to nil
         await NotificationManager.scheduleNotifications(for: post)
 
-        let pending = await pendingRequests(for: post)
-        #expect(pending.isEmpty)
+        #expect(fakeCenter.addCalls.isEmpty)
     }
 
     @Test func test_scheduleNotifications_skipsPastDates() async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        // Ten days in the past: even the day-after reminder's 9 AM slot has
-        // passed, so every reminder should be skipped.
-        let post = Post(title: "Past post", dueDate: .now.addingTimeInterval(-10 * day))
+        // Ten days ago — every reminder's 9 AM slot is in the past.
+        let post = Post(title: "Past post", dueDate: .now.addingTimeInterval(-10 * 24 * 60 * 60))
         await NotificationManager.scheduleNotifications(for: post)
 
-        let pending = await pendingRequests(for: post)
-        #expect(pending.isEmpty)
+        #expect(fakeCenter.addCalls.isEmpty)
     }
 
-    // MARK: - Cancellation
+    @Test func test_scheduleNotifications_notCalledWhenNotAuthorized() async {
+        fakeCenter.authorizationStatusToReturn = .denied
+
+        let post = Post(title: "No auth", dueDate: futureDate())
+        await NotificationManager.scheduleNotifications(for: post)
+
+        #expect(fakeCenter.addCalls.isEmpty)
+    }
+
+    // MARK: - NotificationManager: cancellation
 
     @Test func test_cancelNotifications_removesAllThreeIdentifiers() async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        let post = Post(title: "Cancel me", dueDate: .now.addingTimeInterval(10 * day))
+        let post = Post(title: "Cancel me", dueDate: futureDate())
         await NotificationManager.scheduleNotifications(for: post)
-        #expect(await pendingRequests(for: post).count == 3)
+        #expect(fakeCenter.pending.count == 3)
 
         NotificationManager.cancelNotifications(for: post)
 
-        let remaining = await pendingRequests(for: post)
-        #expect(remaining.isEmpty)
+        #expect(fakeCenter.pending.isEmpty)
     }
 
-    // MARK: - Identifiers
-
     @Test func test_notificationIdentifiers_usePostID() async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        let post = Post(title: "ID check", dueDate: .now.addingTimeInterval(10 * day))
+        let post = Post(title: "ID check", dueDate: futureDate())
         await NotificationManager.scheduleNotifications(for: post)
 
-        let identifiers = Set(await pendingRequests(for: post).map(\.identifier))
+        let identifiers = Set(fakeCenter.pending.map(\.identifier))
         #expect(identifiers == [
             post.id.uuidString + "_tomorrow",
             post.id.uuidString + "_today",
@@ -146,42 +103,100 @@ struct NotificationTests {
         ])
     }
 
+    @Test func test_cancelNotifications_calledWithCorrectPostID() async {
+        let post = Post(title: "Cancel identifiers", dueDate: futureDate())
+        await NotificationManager.scheduleNotifications(for: post)
+
+        NotificationManager.cancelNotifications(for: post)
+
+        let expected: Set<String> = [
+            post.id.uuidString + "_tomorrow",
+            post.id.uuidString + "_today",
+            post.id.uuidString + "_overdue"
+        ]
+        let cancelCall = fakeCenter.removeCalls.last ?? []
+        #expect(Set(cancelCall) == expected)
+    }
+
     // MARK: - Trigger times
 
     @Test func test_dayBeforeNotification_firesAtNineAM() async {
-        await assertFiresAtNineAM(identifierSuffix: "_tomorrow")
+        try? await assertFiresAtNineAM(suffix: "_tomorrow")
     }
 
     @Test func test_dayOfNotification_firesAtNineAM() async {
-        await assertFiresAtNineAM(identifierSuffix: "_today")
+        try? await assertFiresAtNineAM(suffix: "_today")
     }
 
     @Test func test_overdueNotification_firesAtNineAM() async {
-        await assertFiresAtNineAM(identifierSuffix: "_overdue")
+        try? await assertFiresAtNineAM(suffix: "_overdue")
     }
 
-    /// Schedules a post far enough in the future that all three reminders are
-    /// created, then verifies the named reminder's calendar trigger fires at
-    /// 09:00.
-    private func assertFiresAtNineAM(identifierSuffix: String) async {
-        guard await ensureAuthorization() else {
-            Issue.record("Provisional notification authorization unavailable — cannot exercise scheduling.")
-            return
-        }
-        clearPending()
-        defer { clearPending() }
-
-        let post = Post(title: "Trigger time", dueDate: .now.addingTimeInterval(10 * day))
+    private func assertFiresAtNineAM(suffix: String) async throws {
+        let post = Post(title: "Trigger time", dueDate: futureDate())
         await NotificationManager.scheduleNotifications(for: post)
 
-        let request = await pendingRequests(for: post)
-            .first { $0.identifier == post.id.uuidString + identifierSuffix }
-
-        guard let trigger = request?.trigger as? UNCalendarNotificationTrigger else {
-            Issue.record("No calendar trigger found for reminder \(identifierSuffix).")
-            return
-        }
+        let scheduled = try #require(request(matching: suffix, for: post))
+        let trigger = try #require(scheduled.trigger as? UNCalendarNotificationTrigger)
         #expect(trigger.dateComponents.hour == 9)
         #expect(trigger.dateComponents.minute == 0)
+    }
+
+    // MARK: - PostDetailViewModel integration
+
+    @Test func test_dueDateToggled_true_schedulesNotifications() async {
+        let viewModel = PostDetailViewModel()
+        viewModel.dueDateValue = futureDate()
+        let post = Post(title: "Toggle on")
+
+        viewModel.dueDateToggled(true, post: post)
+        await settle()
+
+        #expect(fakeCenter.addCalls.count == 3)
+        #expect(fakeCenter.pending.count == 3)
+    }
+
+    @Test func test_dueDateToggled_false_cancelsNotifications() async {
+        let viewModel = PostDetailViewModel()
+        viewModel.dueDateValue = futureDate()
+        let post = Post(title: "Toggle off")
+
+        viewModel.dueDateToggled(true, post: post)
+        await settle()
+        #expect(fakeCenter.pending.count == 3)
+
+        viewModel.dueDateToggled(false, post: post)
+        #expect(fakeCenter.pending.isEmpty)
+    }
+
+    @Test func test_dueDateChanged_schedulesNotifications() async {
+        let viewModel = PostDetailViewModel()
+        viewModel.hasDueDate = true
+        let post = Post(title: "Date change")
+
+        viewModel.dueDateChanged(futureDate(), post: post)
+        await settle()
+
+        #expect(fakeCenter.addCalls.count == 3)
+    }
+
+    @Test func test_deletePost_cancelsNotificationsBeforeDeleting() async throws {
+        let context = try TestSupport.makeContext()
+        let post = TestSupport.insertPost(
+            title: "Delete me",
+            dueDate: futureDate(),
+            in: context
+        )
+        try context.save()
+
+        await NotificationManager.scheduleNotifications(for: post)
+        #expect(fakeCenter.pending.count == 3)
+
+        let viewModel = PostDetailViewModel()
+        viewModel.delete(post, context: context)
+        try context.save()
+
+        #expect(fakeCenter.pending.isEmpty)
+        #expect(try context.fetch(FetchDescriptor<Post>()).isEmpty)
     }
 }
