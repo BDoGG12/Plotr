@@ -13,6 +13,7 @@ import UserNotifications
 /// test, and restores it afterwards — keeping the fake-injection contained
 /// and avoiding parallel-execution collisions across separate test files.
 @MainActor
+@Suite(.serialized)
 final class NotificationTests {
     private let fakeCenter: FakeNotificationCenter
     private let previousManager: NotificationManager
