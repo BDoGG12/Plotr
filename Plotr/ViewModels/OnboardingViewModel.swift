@@ -6,14 +6,23 @@ final class OnboardingViewModel {
     var step: Int = 0
     var name: String = ""
     var handle: String = ""
+    var painPoint: String = ""
+    var frequency: String = ""
     var selected: Set<Platform> = []
 
     var headerSubtitle: String {
-        step == 0 ? "Tell us about you" : "Pick your platforms"
+        switch step {
+        case 0: "Tell us about you"
+        case 1: "How do you plan content?"
+        case 2: "How often do you post?"
+        case 3: "Pick your platforms"
+        case 4: "What you get with Plotr"
+        default: ""
+        }
     }
 
     var primaryButtonTitle: String {
-        step == 0 ? "Continue" : "Start planning"
+        step == 4 ? "Let's go" : "Continue"
     }
 
     var serializedPlatforms: String {
@@ -34,8 +43,8 @@ final class OnboardingViewModel {
     }
 
     func advance(finish: () -> Void) {
-        if step == 0 {
-            step = 1
+        if step < 4 {
+            step += 1
         } else {
             finish()
         }

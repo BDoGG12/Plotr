@@ -4,6 +4,8 @@ struct OnboardingView: View {
     @AppStorage("hasOnboarded") private var hasOnboarded = false
     @AppStorage("creatorName") private var creatorName = ""
     @AppStorage("creatorHandle") private var creatorHandle = ""
+    @AppStorage("creatorPainPoint") private var creatorPainPoint = ""
+    @AppStorage("creatorFrequency") private var creatorFrequency = ""
     @AppStorage("platforms") private var platformsData = ""
 
     @State private var viewModel = OnboardingViewModel()
@@ -16,10 +18,13 @@ struct OnboardingView: View {
                 header
 
                 Group {
-                    if viewModel.step == 0 {
-                        stepOne
-                    } else {
-                        stepTwo
+                    switch viewModel.step {
+                    case 0: stepOne
+                    case 1: stepPainPoint
+                    case 2: stepFrequency
+                    case 3: stepTwo
+                    case 4: stepValueSummary
+                    default: EmptyView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -55,6 +60,101 @@ struct OnboardingView: View {
             field(label: "Your name", text: $viewModel.name, placeholder: "Alex Rivers")
             field(label: "Creator handle", text: $viewModel.handle, placeholder: "@alexrivers")
         }
+    }
+
+    private var stepPainPoint: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("How do you currently plan your content?")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+            Text("Pick the one that matches you best.")
+                .font(.footnote)
+                .foregroundStyle(Theme.textSecondary)
+            VStack(spacing: 10) {
+                ForEach(["Notes app", "Spreadsheet", "In my head", "Other"], id: \.self) { option in
+                    OnboardingOptionRow(
+                        title: option,
+                        isSelected: viewModel.painPoint == option
+                    ) {
+                        viewModel.painPoint = option
+                    }
+                }
+            }
+        }
+    }
+
+    private var stepFrequency: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("How often do you publish?")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+            Text("Pick the cadence you're aiming for.")
+                .font(.footnote)
+                .foregroundStyle(Theme.textSecondary)
+            VStack(spacing: 10) {
+                ForEach(["Daily", "A few times a week", "Weekly", "Occasionally"], id: \.self) { option in
+                    OnboardingOptionRow(
+                        title: option,
+                        isSelected: viewModel.frequency == option
+                    ) {
+                        viewModel.frequency = option
+                    }
+                }
+            }
+        }
+    }
+
+    private var stepValueSummary: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Here's what Plotr does for you")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+            Text("All the moving parts of your content in one place.")
+                .font(.footnote)
+                .foregroundStyle(Theme.textSecondary)
+
+            VStack(spacing: 12) {
+                valueRow(
+                    icon: "rectangle.split.3x1",
+                    title: "Plan across platforms",
+                    subtitle: "Track every post from idea to publish."
+                )
+                valueRow(
+                    icon: "bell.badge",
+                    title: "Stay on schedule",
+                    subtitle: "Reminders the day before, day of, and after."
+                )
+                valueRow(
+                    icon: "pencil.and.outline",
+                    title: "Write with a teleprompter",
+                    subtitle: "Section markers, autosave, and full-screen mode."
+                )
+                valueRow(
+                    icon: "square.and.arrow.up",
+                    title: "Export anywhere",
+                    subtitle: "Send a polished PDF when you need it."
+                )
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    private func valueRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(Theme.accent)
+                .frame(width: 28, alignment: .center)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var stepTwo: some View {
@@ -126,8 +226,38 @@ struct OnboardingView: View {
     private func finish() {
         creatorName = viewModel.name
         creatorHandle = viewModel.handle
+        creatorPainPoint = viewModel.painPoint
+        creatorFrequency = viewModel.frequency
         platformsData = viewModel.serializedPlatforms
         hasOnboarded = true
+    }
+}
+
+private struct OnboardingOptionRow: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Theme.accent : Theme.textSecondary)
+                    .font(.title3)
+            }
+            .padding(14)
+            .background(Theme.surfaceElevated)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isSelected ? Theme.accent : Theme.border, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
