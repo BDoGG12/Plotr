@@ -7,7 +7,7 @@ final class OnboardingViewModel {
     var name: String = ""
     var handle: String = ""
     var painPoint: String = ""
-    var frequency: String = ""
+    var contentVolume: String = ""
     var selected: Set<Platform> = []
 
     var headerSubtitle: String {
