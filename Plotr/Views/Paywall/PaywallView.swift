@@ -9,6 +9,7 @@ enum SubscriptionPlan {
 struct PaywallView: View {
     let dismiss: () -> Void
     let postCount: Int
+    let painPoint: String?
 
     @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var selectedPlan: SubscriptionPlan = .annual
@@ -17,9 +18,21 @@ struct PaywallView: View {
     @State private var monthlyPrice: String = ""
     @State private var annualPrice: String = ""
 
-    init(dismiss: @escaping () -> Void, postCount: Int = 0) {
+    init(dismiss: @escaping () -> Void, postCount: Int = 0, painPoint: String? = nil) {
         self.dismiss = dismiss
         self.postCount = postCount
+        self.painPoint = painPoint
+    }
+
+    /// Headline copy personalised against the onboarding pain-point answer.
+    /// Falls back to a neutral message when no answer was collected.
+    private var paywallHeadline: String {
+        switch painPoint {
+        case "Notes app":   "Ditch the notes app. Plan like a pro."
+        case "Spreadsheet": "Ditch the spreadsheet. Plan like a pro."
+        case "In my head":  "Stop planning in your head. Plan like a pro."
+        default:            "Plan your content like a pro."
+        }
     }
 
     var body: some View {
@@ -69,7 +82,7 @@ struct PaywallView: View {
         VStack(alignment: .leading, spacing: 12) {
             ProBadge()
 
-            Text("Unlock Plotr Pro")
+            Text(paywallHeadline)
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(Theme.textPrimary)
 
@@ -413,26 +426,34 @@ private struct PlanCard: View {
     }
 }
 
-#Preview("Expired") {
+#Preview("Headline — Notes app") {
     let manager = SubscriptionManager()
     manager.status = .expired
-    return PaywallView(dismiss: {}, postCount: 7)
+    return PaywallView(dismiss: {}, postCount: 7, painPoint: "Notes app")
         .environment(manager)
         .preferredColorScheme(.dark)
 }
 
-#Preview("Trial") {
+#Preview("Headline — Spreadsheet") {
     let manager = SubscriptionManager()
     manager.status = .trial
-    return PaywallView(dismiss: {}, postCount: 3)
+    return PaywallView(dismiss: {}, postCount: 3, painPoint: "Spreadsheet")
         .environment(manager)
         .preferredColorScheme(.dark)
 }
 
-#Preview("Pro") {
+#Preview("Headline — In my head") {
     let manager = SubscriptionManager()
-    manager.status = .pro
-    return PaywallView(dismiss: {}, postCount: 12)
+    manager.status = .expired
+    return PaywallView(dismiss: {}, postCount: 5, painPoint: "In my head")
+        .environment(manager)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Headline — Default (nil)") {
+    let manager = SubscriptionManager()
+    manager.status = .trial
+    return PaywallView(dismiss: {}, postCount: 0, painPoint: nil)
         .environment(manager)
         .preferredColorScheme(.dark)
 }
