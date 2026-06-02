@@ -9,6 +9,7 @@ struct OnboardingView: View {
     @AppStorage("platforms") private var platformsData = ""
 
     @State private var viewModel = OnboardingViewModel()
+    @State private var showPaywall: Bool = false
 
     var body: some View {
         ZStack {
@@ -35,6 +36,15 @@ struct OnboardingView: View {
             .padding(24)
         }
         .foregroundStyle(Theme.textPrimary)
+        .fullScreenCover(isPresented: $showPaywall, onDismiss: completePaywallStep) {
+            // NOTE: PaywallView currently only accepts `dismiss` + `postCount`.
+            // The skill spec asked to pass `viewModel.painPoint` too — wire that
+            // up once PaywallView grows a `painPoint` parameter.
+            PaywallView(
+                dismiss: { showPaywall = false },
+                postCount: 0
+            )
+        }
     }
 
     private var header: some View {
@@ -231,6 +241,19 @@ struct OnboardingView: View {
         creatorPainPoint = viewModel.painPoint
         creatorContentVolume = viewModel.contentVolume
         platformsData = viewModel.serializedPlatforms
+
+        let paywallAlreadyShown = UserDefaults.standard.bool(
+            forKey: "plotr_paywall_shown_after_onboarding"
+        )
+        if paywallAlreadyShown {
+            hasOnboarded = true
+        } else {
+            showPaywall = true
+        }
+    }
+
+    private func completePaywallStep() {
+        UserDefaults.standard.set(true, forKey: "plotr_paywall_shown_after_onboarding")
         hasOnboarded = true
     }
 }
