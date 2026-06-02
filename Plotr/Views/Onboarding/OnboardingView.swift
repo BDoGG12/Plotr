@@ -23,7 +23,7 @@ struct OnboardingView: View {
                     case 1: stepPainPoint
                     case 2: stepContentVolume
                     case 3: stepTwo
-                    case 4: stepValueSummary
+                    case 4: stepValueProp
                     default: EmptyView()
                     }
                 }
@@ -104,57 +104,59 @@ struct OnboardingView: View {
         }
     }
 
-    private var stepValueSummary: some View {
+    private var stepValueProp: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Here's what Plotr does for you")
+            Text("Everything you need to create consistently")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
-            Text("All the moving parts of your content in one place.")
-                .font(.footnote)
-                .foregroundStyle(Theme.textSecondary)
 
             VStack(spacing: 12) {
-                valueRow(
-                    icon: "rectangle.split.3x1",
-                    title: "Plan across platforms",
-                    subtitle: "Track every post from idea to publish."
+                valuePropCard(
+                    icon: "list.bullet.clipboard.fill",
+                    title: "Plan",
+                    description: "Organise every post from idea to done"
                 )
-                valueRow(
-                    icon: "bell.badge",
-                    title: "Stay on schedule",
-                    subtitle: "Reminders the day before, day of, and after."
-                )
-                valueRow(
+                valuePropCard(
                     icon: "pencil.and.outline",
-                    title: "Write with a teleprompter",
-                    subtitle: "Section markers, autosave, and full-screen mode."
+                    title: "Script",
+                    description: "Write your full script without leaving the app"
                 )
-                valueRow(
-                    icon: "square.and.arrow.up",
-                    title: "Export anywhere",
-                    subtitle: "Send a polished PDF when you need it."
+                valuePropCard(
+                    icon: "bell.fill",
+                    title: "Publish",
+                    description: "Never miss a deadline with due date reminders"
                 )
             }
             .padding(.top, 4)
         }
     }
 
-    private func valueRow(icon: String, title: String, subtitle: String) -> some View {
-        HStack(alignment: .top, spacing: 12) {
+    private func valuePropCard(icon: String, title: String, description: String) -> some View {
+        HStack(alignment: .center, spacing: 14) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(Theme.accent)
-                .frame(width: 28, alignment: .center)
+                .frame(width: 44, height: 44)
+                .background(Theme.accent.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                Text(subtitle)
+                Text(description)
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)
             }
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Theme.surfaceElevated)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Theme.border)
+        )
     }
 
     private var stepTwo: some View {
