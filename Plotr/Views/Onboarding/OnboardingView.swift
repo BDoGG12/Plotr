@@ -5,7 +5,7 @@ struct OnboardingView: View {
     @AppStorage("creatorName") private var creatorName = ""
     @AppStorage("creatorHandle") private var creatorHandle = ""
     @AppStorage("creatorPainPoint") private var creatorPainPoint = ""
-    @AppStorage("creatorFrequency") private var creatorFrequency = ""
+    @AppStorage("creatorContentVolume") private var creatorContentVolume = ""
     @AppStorage("platforms") private var platformsData = ""
 
     @State private var viewModel = OnboardingViewModel()
@@ -21,7 +21,7 @@ struct OnboardingView: View {
                     switch viewModel.step {
                     case 0: stepOne
                     case 1: stepPainPoint
-                    case 2: stepFrequency
+                    case 2: stepContentVolume
                     case 3: stepTwo
                     case 4: stepValueSummary
                     default: EmptyView()
@@ -83,21 +83,21 @@ struct OnboardingView: View {
         }
     }
 
-    private var stepFrequency: some View {
+    private var stepContentVolume: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("How often do you publish?")
+            Text("How many posts do you publish per week?")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
-            Text("Pick the cadence you're aiming for.")
+            Text("Pick the range that matches your output.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
             VStack(spacing: 10) {
-                ForEach(["Daily", "A few times a week", "Weekly", "Occasionally"], id: \.self) { option in
+                ForEach(["1-2", "3-5", "6-10", "10+"], id: \.self) { option in
                     OnboardingOptionRow(
                         title: option,
-                        isSelected: viewModel.frequency == option
+                        isSelected: viewModel.contentVolume == option
                     ) {
-                        viewModel.frequency = option
+                        viewModel.contentVolume = option
                     }
                 }
             }
@@ -227,7 +227,7 @@ struct OnboardingView: View {
         creatorName = viewModel.name
         creatorHandle = viewModel.handle
         creatorPainPoint = viewModel.painPoint
-        creatorFrequency = viewModel.frequency
+        creatorContentVolume = viewModel.contentVolume
         platformsData = viewModel.serializedPlatforms
         hasOnboarded = true
     }
