@@ -33,15 +33,17 @@ struct OnboardingViewModelTests {
         #expect(finished == false)
     }
 
-    @Test func advanceFromStepOneCallsFinish() {
+    @Test func advanceFromFinalStepCallsFinish() {
+        // Onboarding now has five steps (0…4). `finish` only fires from
+        // the last one — step 4 (the value-prop screen).
         let vm = OnboardingViewModel()
-        vm.step = 1
+        vm.step = 4
         var finished = false
 
         vm.advance { finished = true }
 
         #expect(finished == true)
-        #expect(vm.step == 1)
+        #expect(vm.step == 4)
     }
 
     @Test func goBackFromStepOneReturnsToZero() {
@@ -53,12 +55,30 @@ struct OnboardingViewModelTests {
 
     @Test func headerSubtitleAndButtonTitleByStep() {
         let vm = OnboardingViewModel()
+
+        // Step 0 — name / handle
         #expect(vm.headerSubtitle == "Tell us about you")
         #expect(vm.primaryButtonTitle == "Continue")
 
+        // Step 1 — pain point
         vm.step = 1
+        #expect(vm.headerSubtitle == "How do you plan content?")
+        #expect(vm.primaryButtonTitle == "Continue")
+
+        // Step 2 — content volume
+        vm.step = 2
+        #expect(vm.headerSubtitle == "How often do you post?")
+        #expect(vm.primaryButtonTitle == "Continue")
+
+        // Step 3 — platform picker
+        vm.step = 3
         #expect(vm.headerSubtitle == "Pick your platforms")
-        #expect(vm.primaryButtonTitle == "Start planning")
+        #expect(vm.primaryButtonTitle == "Continue")
+
+        // Step 4 — value proposition (final step, button changes copy)
+        vm.step = 4
+        #expect(vm.headerSubtitle == "What you get with Plotr")
+        #expect(vm.primaryButtonTitle == "Let's go")
     }
 
     @Test func serializedPlatformsContainsAllSelectedRawValues() {
