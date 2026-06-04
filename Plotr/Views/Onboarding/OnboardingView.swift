@@ -217,6 +217,7 @@ struct OnboardingView: View {
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
             .foregroundStyle(.black)
+            .disabled(!viewModel.canAdvance)
         }
     }
 
