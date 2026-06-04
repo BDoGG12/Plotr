@@ -25,6 +25,17 @@ final class OnboardingViewModel {
         step == 4 ? "Let's go" : "Continue"
     }
 
+    /// `true` when the current step's required answer is present.
+    /// Steps 0 (name/handle) and 3 (platforms) are intentionally ungated —
+    /// the header "Skip" button is the escape hatch out of onboarding.
+    var canAdvance: Bool {
+        switch step {
+        case 1: !painPoint.isEmpty
+        case 2: !contentVolume.isEmpty
+        default: true
+        }
+    }
+
     var serializedPlatforms: String {
         selected.map(\.rawValue).joined(separator: ",")
     }
@@ -43,6 +54,7 @@ final class OnboardingViewModel {
     }
 
     func advance(finish: () -> Void) {
+        guard canAdvance else { return }
         if step < 4 {
             step += 1
         } else {
