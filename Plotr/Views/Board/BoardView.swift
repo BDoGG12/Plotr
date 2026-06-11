@@ -16,7 +16,7 @@ struct BoardView: View {
     @State private var viewModel = BoardViewModel()
     @State private var showPaywall: Bool = false
 
-    private static let freePostLimit = 5
+    private static let freePostLimit = 3
 
     var body: some View {
         NavigationStack {
